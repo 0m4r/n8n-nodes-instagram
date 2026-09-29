@@ -48,7 +48,7 @@ class InstagramApi {
         this.test = {
             request: {
                 method: 'GET',
-                url: '=https://{{$credentials.apiEndpoint ?? "graph.facebook.com"}}/v22.0/me',
+                url: '=https://{{$credentials.apiEndpoint ?? "graph.facebook.com"}}/v26.0/me',
                 qs: {
                     fields: 'id',
                 },

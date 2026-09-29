@@ -2,7 +2,10 @@ import type {
 	IDataObject,
 	IExecuteFunctions,
 	IHttpRequestOptions,
+	ILoadOptionsFunctions,
 	INodeExecutionData,
+	INodeListSearchResult,
+	INodePropertyOptions,
 	INodeType,
 	INodeTypeDescription,
 	JsonObject,
@@ -341,20 +344,42 @@ export class Instagram implements INodeType {
 				required: true,
 			},
 			{
-				displayName: 'Node',
+				displayName: 'Account',
 				name: 'node',
-				type: 'string',
-				default: '',
+				type: 'resourceLocator',
+				default: { mode: 'list', value: '' },
+				required: true,
 				description:
 					'The Instagram Business Account ID or User ID on which to publish the media, or the professional account that owns the commented media, or the IG User to read data for, or the IG User performing a hashtag or messaging query',
-				placeholder: 'me',
-				required: true,
 				displayOptions: {
 					show: {
 						resource: ['image', 'reels', 'stories', 'carousel', 'comments', 'igUser', 'igHashtag', 'messaging'],
 						operation: ['publish', 'sendPrivateReply', 'get', 'getMedia', 'search', 'getRecentMedia', 'getTopMedia', 'sendMessage'],
 					},
 				},
+				modes: [
+					{
+						displayName: 'From List',
+						name: 'list',
+						type: 'list',
+						placeholder: 'Select an account...',
+						typeOptions: {
+							searchListMethod: 'searchInstagramAccounts',
+							searchable: true,
+						},
+					},
+					{
+						displayName: 'By ID',
+						name: 'id',
+						type: 'string',
+						validation: [],
+						placeholder: 'Enter Instagram Account ID',
+						extractValue: {
+							type: 'regex',
+							regex: '(.*)',
+						},
+					},
+				],
 			},
 			{
 				displayName: 'Access Token',
@@ -413,8 +438,9 @@ export class Instagram implements INodeType {
 				displayName: 'Graph API Version',
 				name: 'graphApiVersion',
 				type: 'string',
-				default: 'v22.0',
-				description: 'Facebook Graph API version to use when making requests, e.g. v22.0',
+				default: 'v26.0',
+				description: 'Facebook Graph API version to use (e.g., v26.0, v25.0, v24.0)',
+				placeholder: 'v26.0',
 				required: true,
 				displayOptions: {
 					show: {
@@ -901,11 +927,71 @@ export class Instagram implements INodeType {
 		],
 	};
 
+	methods = {
+		listSearch: {
+			async searchInstagramAccounts(
+				this: ILoadOptionsFunctions,
+				filter?: string,
+			): Promise<INodeListSearchResult> {
+				const returnData: INodePropertyOptions[] = [];
+
+				try {
+					// Get API endpoint from credentials
+					let hostUrl = 'graph.facebook.com';
+					try {
+						const credentials = await this.getCredentials('instagramApi');
+						if (credentials?.apiEndpoint && typeof credentials.apiEndpoint === 'string') {
+							hostUrl = credentials.apiEndpoint;
+						}
+					} catch (error) {
+						// Use default if credentials can't be retrieved
+					}
+
+					// Call /me endpoint to get user info (uses v26.0)
+					const url = `https://${hostUrl}/v26.0/me`;
+					const requestOptions: IHttpRequestOptions = {
+						headers: {
+							accept: 'application/json',
+						},
+						method: 'GET',
+						url,
+						qs: {
+							fields: 'id,name,username',
+						},
+						json: true,
+					};
+
+					const response = (await this.helpers.httpRequestWithAuthentication.call(
+						this,
+						'instagramApi',
+						requestOptions,
+					)) as IDataObject;
+
+					// Add the account from /me response
+					if (response.id) {
+						const nameValue = String(response.name || response.username || `Account ${response.id}`);
+						const username = response.username ? `@${String(response.username)}` : '';
+						const displayName = username ? `${nameValue} ${username}` : nameValue;
+						returnData.push({
+							name: displayName,
+							value: String(response.id),
+						});
+					}
+				} catch (error) {
+					// If API call fails, return empty results (user can enter ID manually)
+					// The resourceLocator 'By ID' mode will still be available
+				}
+
+				return { results: returnData };
+			},
+		},
+	};
+
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
 		const returnItems: INodeExecutionData[] = [];
 
-		// Get API endpoint from credentials, fallback to graph.facebook.com
+		// Get API endpoint from credentials
 		let hostUrl = 'graph.facebook.com';
 		try {
 			const credentials = await this.getCredentials('instagramApi');
@@ -1168,6 +1254,7 @@ export class Instagram implements INodeType {
 					let graphApiVersion: string;
 					let accountId: string;
 					try {
+						// Get API version from node parameter
 						graphApiVersion = this.getNodeParameter('graphApiVersion', itemIndex) as string;
 						if (!graphApiVersion || typeof graphApiVersion !== 'string') {
 							throw new NodeOperationError(
@@ -1188,7 +1275,11 @@ export class Instagram implements INodeType {
 					}
 
 					try {
-						accountId = this.getNodeParameter('node', itemIndex) as string;
+						const nodeParam = this.getNodeParameter('node', itemIndex) as string | { value: string };
+
+						// Handle both old string format and new resourceLocator format
+
+						accountId = typeof nodeParam === 'string' ? nodeParam : nodeParam.value;
 						if (!accountId || typeof accountId !== 'string') {
 							throw new NodeOperationError(
 								this.getNode(),
@@ -1517,10 +1608,8 @@ export class Instagram implements INodeType {
 						}
 
 						if (operation === 'getMe') {
-							// Use a fixed versioned /me endpoint so this operation
-							// does not depend on any node parameters that may be
-							// missing in older saved workflows or older node versions.
-							const url = `https://${hostUrl}/v22.0/me`;
+							// Use v26.0 for /me endpoint
+							const url = `https://${hostUrl}/v26.0/me`;
 							const requestOptions: IHttpRequestOptions = {
 								headers: {
 									accept: 'application/json,text/*;q=0.99',
@@ -1618,7 +1707,11 @@ export class Instagram implements INodeType {
 						};
 
 						try {
-							node = this.getNodeParameter('node', itemIndex) as string;
+							const nodeParam = this.getNodeParameter('node', itemIndex) as string | { value: string };
+
+							// Handle both old string format and new resourceLocator format
+
+							node = typeof nodeParam === 'string' ? nodeParam : nodeParam.value;
 							if (!node || typeof node !== 'string') {
 								throw new NodeOperationError(
 									this.getNode(),
@@ -1638,6 +1731,7 @@ export class Instagram implements INodeType {
 						}
 
 						try {
+							// Get API version from node parameter
 							graphApiVersion = this.getNodeParameter('graphApiVersion', itemIndex) as string;
 							if (!graphApiVersion || typeof graphApiVersion !== 'string') {
 								throw new NodeOperationError(
@@ -2065,6 +2159,7 @@ export class Instagram implements INodeType {
 					let graphApiVersion: string;
 					let accountId: string;
 					try {
+						// Get API version from node parameter
 						graphApiVersion = this.getNodeParameter('graphApiVersion', itemIndex) as string;
 						if (!graphApiVersion || typeof graphApiVersion !== 'string') {
 							throw new NodeOperationError(
@@ -2085,7 +2180,11 @@ export class Instagram implements INodeType {
 					}
 
 					try {
-						accountId = this.getNodeParameter('node', itemIndex) as string;
+						const nodeParam = this.getNodeParameter('node', itemIndex) as string | { value: string };
+
+						// Handle both old string format and new resourceLocator format
+
+						accountId = typeof nodeParam === 'string' ? nodeParam : nodeParam.value;
 						if (!accountId || typeof accountId !== 'string') {
 							throw new NodeOperationError(
 								this.getNode(),
@@ -2382,6 +2481,7 @@ export class Instagram implements INodeType {
 					let graphApiVersion: string;
 					let pageId: string;
 					try {
+						// Get API version from node parameter
 						graphApiVersion = this.getNodeParameter('graphApiVersion', itemIndex) as string;
 						if (!graphApiVersion || typeof graphApiVersion !== 'string') {
 							throw new NodeOperationError(
@@ -2511,6 +2611,7 @@ export class Instagram implements INodeType {
 					let graphApiVersion: string;
 					let accountId: string;
 					try {
+						// Get API version from node parameter
 						graphApiVersion = this.getNodeParameter('graphApiVersion', itemIndex) as string;
 						if (!graphApiVersion || typeof graphApiVersion !== 'string') {
 							throw new NodeOperationError(
@@ -2531,7 +2632,11 @@ export class Instagram implements INodeType {
 					}
 
 					try {
-						accountId = this.getNodeParameter('node', itemIndex) as string;
+						const nodeParam = this.getNodeParameter('node', itemIndex) as string | { value: string };
+
+						// Handle both old string format and new resourceLocator format
+
+						accountId = typeof nodeParam === 'string' ? nodeParam : nodeParam.value;
 						if (!accountId || typeof accountId !== 'string') {
 							throw new NodeOperationError(
 								this.getNode(),
@@ -2792,6 +2897,7 @@ export class Instagram implements INodeType {
 				if (resource === 'comments') {
 					let graphApiVersion: string;
 					try {
+						// Get API version from node parameter
 						graphApiVersion = this.getNodeParameter('graphApiVersion', itemIndex) as string;
 						if (!graphApiVersion || typeof graphApiVersion !== 'string') {
 							throw new NodeOperationError(
@@ -3077,7 +3183,11 @@ export class Instagram implements INodeType {
 							let text: string;
 
 							try {
-								accountId = this.getNodeParameter('node', itemIndex) as string;
+								const nodeParam = this.getNodeParameter('node', itemIndex) as string | { value: string };
+
+								// Handle both old string format and new resourceLocator format
+
+								accountId = typeof nodeParam === 'string' ? nodeParam : nodeParam.value;
 								if (!accountId || typeof accountId !== 'string') {
 									throw new NodeOperationError(
 										this.getNode(),
@@ -3248,7 +3358,11 @@ export class Instagram implements INodeType {
 				let additionalFields: IDataObject;
 
 				try {
-					node = this.getNodeParameter('node', itemIndex) as string;
+					const nodeParam = this.getNodeParameter('node', itemIndex) as string | { value: string };
+
+					// Handle both old string format and new resourceLocator format
+
+					node = typeof nodeParam === 'string' ? nodeParam : nodeParam.value;
 					if (!node || typeof node !== 'string') {
 						throw new NodeOperationError(
 							this.getNode(),
@@ -3268,6 +3382,7 @@ export class Instagram implements INodeType {
 				}
 
 				try {
+					// Get API version from node parameter
 					graphApiVersion = this.getNodeParameter('graphApiVersion', itemIndex) as string;
 					if (!graphApiVersion || typeof graphApiVersion !== 'string') {
 						throw new NodeOperationError(

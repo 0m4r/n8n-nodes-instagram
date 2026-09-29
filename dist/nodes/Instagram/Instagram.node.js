@@ -329,19 +329,41 @@ class Instagram {
                     required: true,
                 },
                 {
-                    displayName: 'Node',
+                    displayName: 'Account',
                     name: 'node',
-                    type: 'string',
-                    default: '',
-                    description: 'The Instagram Business Account ID or User ID on which to publish the media, or the professional account that owns the commented media, or the IG User to read data for, or the IG User performing a hashtag or messaging query',
-                    placeholder: 'me',
+                    type: 'resourceLocator',
+                    default: { mode: 'list', value: '' },
                     required: true,
+                    description: 'The Instagram Business Account ID or User ID on which to publish the media, or the professional account that owns the commented media, or the IG User to read data for, or the IG User performing a hashtag or messaging query',
                     displayOptions: {
                         show: {
                             resource: ['image', 'reels', 'stories', 'carousel', 'comments', 'igUser', 'igHashtag', 'messaging'],
                             operation: ['publish', 'sendPrivateReply', 'get', 'getMedia', 'search', 'getRecentMedia', 'getTopMedia', 'sendMessage'],
                         },
                     },
+                    modes: [
+                        {
+                            displayName: 'From List',
+                            name: 'list',
+                            type: 'list',
+                            placeholder: 'Select an account...',
+                            typeOptions: {
+                                searchListMethod: 'searchInstagramAccounts',
+                                searchable: true,
+                            },
+                        },
+                        {
+                            displayName: 'By ID',
+                            name: 'id',
+                            type: 'string',
+                            validation: [],
+                            placeholder: 'Enter Instagram Account ID',
+                            extractValue: {
+                                type: 'regex',
+                                regex: '(.*)',
+                            },
+                        },
+                    ],
                 },
                 {
                     displayName: 'Access Token',
@@ -397,8 +419,9 @@ class Instagram {
                     displayName: 'Graph API Version',
                     name: 'graphApiVersion',
                     type: 'string',
-                    default: 'v22.0',
-                    description: 'Facebook Graph API version to use when making requests, e.g. v22.0',
+                    default: 'v26.0',
+                    description: 'Facebook Graph API version to use (e.g., v26.0, v25.0, v24.0)',
+                    placeholder: 'v26.0',
                     required: true,
                     displayOptions: {
                         show: {
@@ -868,6 +891,49 @@ class Instagram {
                 },
             ],
         };
+        this.methods = {
+            listSearch: {
+                async searchInstagramAccounts(filter) {
+                    const returnData = [];
+                    try {
+                        let hostUrl = 'graph.facebook.com';
+                        try {
+                            const credentials = await this.getCredentials('instagramApi');
+                            if ((credentials === null || credentials === void 0 ? void 0 : credentials.apiEndpoint) && typeof credentials.apiEndpoint === 'string') {
+                                hostUrl = credentials.apiEndpoint;
+                            }
+                        }
+                        catch (error) {
+                        }
+                        const url = `https://${hostUrl}/v26.0/me`;
+                        const requestOptions = {
+                            headers: {
+                                accept: 'application/json',
+                            },
+                            method: 'GET',
+                            url,
+                            qs: {
+                                fields: 'id,name,username',
+                            },
+                            json: true,
+                        };
+                        const response = (await this.helpers.httpRequestWithAuthentication.call(this, 'instagramApi', requestOptions));
+                        if (response.id) {
+                            const nameValue = String(response.name || response.username || `Account ${response.id}`);
+                            const username = response.username ? `@${String(response.username)}` : '';
+                            const displayName = username ? `${nameValue} ${username}` : nameValue;
+                            returnData.push({
+                                name: displayName,
+                                value: String(response.id),
+                            });
+                        }
+                    }
+                    catch (error) {
+                    }
+                    return { results: returnData };
+                },
+            },
+        };
     }
     async execute() {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11;
@@ -1037,7 +1103,8 @@ class Instagram {
                         throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Failed to get Graph API version parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`, { itemIndex });
                     }
                     try {
-                        accountId = this.getNodeParameter('node', itemIndex);
+                        const nodeParam = this.getNodeParameter('node', itemIndex);
+                        accountId = typeof nodeParam === 'string' ? nodeParam : nodeParam.value;
                         if (!accountId || typeof accountId !== 'string') {
                             throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Invalid or missing account ID (node) parameter at item index ${itemIndex}. Account ID must be a non-empty string.`, { itemIndex });
                         }
@@ -1240,7 +1307,7 @@ class Instagram {
                             continue;
                         }
                         if (operation === 'getMe') {
-                            const url = `https://${hostUrl}/v22.0/me`;
+                            const url = `https://${hostUrl}/v26.0/me`;
                             const requestOptions = {
                                 headers: {
                                     accept: 'application/json,text/*;q=0.99',
@@ -1301,7 +1368,8 @@ class Instagram {
                         let caption;
                         let carouselMedia;
                         try {
-                            node = this.getNodeParameter('node', itemIndex);
+                            const nodeParam = this.getNodeParameter('node', itemIndex);
+                            node = typeof nodeParam === 'string' ? nodeParam : nodeParam.value;
                             if (!node || typeof node !== 'string') {
                                 throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Invalid or missing node (account ID) parameter at item index ${itemIndex}. Node must be a non-empty string.`, { itemIndex });
                             }
@@ -1592,7 +1660,8 @@ class Instagram {
                         throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Failed to get Graph API version parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`, { itemIndex });
                     }
                     try {
-                        accountId = this.getNodeParameter('node', itemIndex);
+                        const nodeParam = this.getNodeParameter('node', itemIndex);
+                        accountId = typeof nodeParam === 'string' ? nodeParam : nodeParam.value;
                         if (!accountId || typeof accountId !== 'string') {
                             throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Invalid or missing account ID (node) parameter at item index ${itemIndex}. Account ID must be a non-empty string.`, { itemIndex });
                         }
@@ -1872,7 +1941,8 @@ class Instagram {
                         throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Failed to get Graph API version parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`, { itemIndex });
                     }
                     try {
-                        accountId = this.getNodeParameter('node', itemIndex);
+                        const nodeParam = this.getNodeParameter('node', itemIndex);
+                        accountId = typeof nodeParam === 'string' ? nodeParam : nodeParam.value;
                         if (!accountId || typeof accountId !== 'string') {
                             throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Invalid or missing account ID (node) parameter at item index ${itemIndex}. Account ID must be a non-empty string.`, { itemIndex });
                         }
@@ -2221,7 +2291,8 @@ class Instagram {
                             let commentId;
                             let text;
                             try {
-                                accountId = this.getNodeParameter('node', itemIndex);
+                                const nodeParam = this.getNodeParameter('node', itemIndex);
+                                accountId = typeof nodeParam === 'string' ? nodeParam : nodeParam.value;
                                 if (!accountId || typeof accountId !== 'string') {
                                     throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Invalid or missing account ID (node) parameter at item index ${itemIndex}. Account ID must be a non-empty string.`, { itemIndex });
                                 }
@@ -2327,7 +2398,8 @@ class Instagram {
                 let caption;
                 let additionalFields;
                 try {
-                    node = this.getNodeParameter('node', itemIndex);
+                    const nodeParam = this.getNodeParameter('node', itemIndex);
+                    node = typeof nodeParam === 'string' ? nodeParam : nodeParam.value;
                     if (!node || typeof node !== 'string') {
                         throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Invalid or missing node (account ID) parameter at item index ${itemIndex}. Node must be a non-empty string.`, { itemIndex });
                     }
