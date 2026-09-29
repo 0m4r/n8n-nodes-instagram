@@ -873,7 +873,15 @@ class Instagram {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11;
         const items = this.getInputData();
         const returnItems = [];
-        const hostUrl = 'graph.facebook.com';
+        let hostUrl = 'graph.facebook.com';
+        try {
+            const credentials = await this.getCredentials('instagramApi');
+            if ((credentials === null || credentials === void 0 ? void 0 : credentials.apiEndpoint) && typeof credentials.apiEndpoint === 'string') {
+                hostUrl = credentials.apiEndpoint;
+            }
+        }
+        catch (error) {
+        }
         const waitForContainerReady = async ({ creationId, hostUrl, graphApiVersion, itemIndex, pollIntervalMs, maxPollAttempts, }) => {
             if (!creationId || typeof creationId !== 'string') {
                 throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Invalid creation ID provided: ${creationId}. Creation ID must be a non-empty string.`, { itemIndex });
@@ -1232,7 +1240,7 @@ class Instagram {
                             continue;
                         }
                         if (operation === 'getMe') {
-                            const url = 'https://graph.facebook.com/v22.0/me';
+                            const url = `https://${hostUrl}/v22.0/me`;
                             const requestOptions = {
                                 headers: {
                                     accept: 'application/json,text/*;q=0.99',

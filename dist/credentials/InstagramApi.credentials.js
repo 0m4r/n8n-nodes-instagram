@@ -17,6 +17,25 @@ class InstagramApi {
                 default: '',
                 description: 'Instagram Graph API user access token with publish permissions',
             },
+            {
+                displayName: 'API Endpoint',
+                name: 'apiEndpoint',
+                type: 'options',
+                options: [
+                    {
+                        name: 'Facebook Graph API',
+                        value: 'graph.facebook.com',
+                        description: 'Use graph.facebook.com endpoint (default)',
+                    },
+                    {
+                        name: 'Instagram Graph API',
+                        value: 'graph.instagram.com',
+                        description: 'Use graph.instagram.com endpoint',
+                    },
+                ],
+                default: 'graph.facebook.com',
+                description: 'Select the API endpoint to use for requests',
+            },
         ];
         this.authenticate = {
             type: 'generic',
@@ -29,7 +48,7 @@ class InstagramApi {
         this.test = {
             request: {
                 method: 'GET',
-                url: 'https://graph.facebook.com/v22.0/me',
+                url: '=https://{{$credentials.apiEndpoint ?? "graph.facebook.com"}}/v22.0/me',
                 qs: {
                     fields: 'id',
                 },

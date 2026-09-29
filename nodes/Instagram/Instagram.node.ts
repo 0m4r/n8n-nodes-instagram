@@ -905,7 +905,17 @@ export class Instagram implements INodeType {
 		const items = this.getInputData();
 		const returnItems: INodeExecutionData[] = [];
 
-		const hostUrl = 'graph.facebook.com';
+		// Get API endpoint from credentials, fallback to graph.facebook.com
+		let hostUrl = 'graph.facebook.com';
+		try {
+			const credentials = await this.getCredentials('instagramApi');
+			if (credentials?.apiEndpoint && typeof credentials.apiEndpoint === 'string') {
+				hostUrl = credentials.apiEndpoint;
+			}
+		} catch (error) {
+			// If we can't get credentials, we'll use the default value
+			// This ensures backward compatibility
+		}
 
 		const waitForContainerReady = async ({
 			creationId,
@@ -1038,7 +1048,7 @@ export class Instagram implements INodeType {
 				} catch (error) {
 					lastError = error;
 					consecutiveErrors++;
-					
+
 					// If it's a known error status or NodeOperationError, rethrow it immediately
 					if (error instanceof NodeOperationError) {
 						throw error;
@@ -1343,8 +1353,8 @@ export class Instagram implements INodeType {
 								try {
 									credentials = (await this.getCredentials('instagramApi')) as
 										| {
-												accessToken?: string;
-										  }
+											accessToken?: string;
+										}
 										| null;
 								} catch (error) {
 									throw new NodeOperationError(
@@ -1510,7 +1520,7 @@ export class Instagram implements INodeType {
 							// Use a fixed versioned /me endpoint so this operation
 							// does not depend on any node parameters that may be
 							// missing in older saved workflows or older node versions.
-							const url = 'https://graph.facebook.com/v22.0/me';
+							const url = `https://${hostUrl}/v22.0/me`;
 							const requestOptions: IHttpRequestOptions = {
 								headers: {
 									accept: 'application/json,text/*;q=0.99',
@@ -1828,8 +1838,7 @@ export class Instagram implements INodeType {
 								}
 								throw new NodeOperationError(
 									this.getNode(),
-									`Failed to get carousel media parameter at item index ${itemIndex}: ${
-										error instanceof Error ? error.message : String(error)
+									`Failed to get carousel media parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)
 									}`,
 									{ itemIndex },
 								);
@@ -2037,10 +2046,10 @@ export class Instagram implements INodeType {
 						const errorItem =
 							errorWithGraph.response !== undefined
 								? {
-										statusCode: errorWithGraph.statusCode,
-										...(errorWithGraph.response.body?.error ?? {}),
-										headers: errorWithGraph.response.headers,
-									}
+									statusCode: errorWithGraph.statusCode,
+									...(errorWithGraph.response.body?.error ?? {}),
+									headers: errorWithGraph.response.headers,
+								}
 								: (error as IDataObject);
 						const contextMessage =
 							error instanceof Error ? error.message : String((error as IDataObject).message ?? error);
@@ -2312,8 +2321,8 @@ export class Instagram implements INodeType {
 
 								const paging = response.paging as
 									| {
-											cursors?: { after?: string };
-									  }
+										cursors?: { after?: string };
+									}
 									| undefined;
 								after = paging?.cursors?.after;
 
@@ -2722,8 +2731,8 @@ export class Instagram implements INodeType {
 
 								const paging = response.paging as
 									| {
-											cursors?: { after?: string };
-									  }
+										cursors?: { after?: string };
+									}
 									| undefined;
 								after = paging?.cursors?.after;
 
@@ -3355,7 +3364,7 @@ export class Instagram implements INodeType {
 				// Validate video/image URLs before making API call
 				const videoUrl = mediaPayload.video_url as string | undefined;
 				const imageUrl = mediaPayload.image_url as string | undefined;
-				
+
 				if (videoUrl) {
 					const trimmedUrl = videoUrl.trim();
 					if (!trimmedUrl) {
@@ -3487,7 +3496,7 @@ export class Instagram implements INodeType {
 					let errorMessage = 'Unknown error';
 					let errorCode: number | undefined;
 					let errorType: string | undefined;
-					
+
 					type ResponseErrorType = {
 						statusCode?: number;
 						response?: {
@@ -3504,9 +3513,9 @@ export class Instagram implements INodeType {
 						};
 						message?: string;
 					};
-					
+
 					const err = error as ResponseErrorType;
-					
+
 					if (err.response?.body?.error) {
 						const graphError = err.response.body.error;
 						errorMessage = graphError.message || errorMessage;
@@ -3547,7 +3556,7 @@ export class Instagram implements INodeType {
 							...(errorType && { type: errorType }),
 							...(err.statusCode && { statusCode: err.statusCode }),
 						};
-						
+
 						// Add error details if available (only primitive values)
 						if (errorObj && typeof errorObj === 'object' && !Array.isArray(errorObj)) {
 							Object.keys(errorObj).forEach((key) => {
@@ -3563,7 +3572,7 @@ export class Instagram implements INodeType {
 								}
 							});
 						}
-						
+
 						throw new NodeApiError(this.getNode(), detailedError);
 					}
 
@@ -3609,7 +3618,7 @@ export class Instagram implements INodeType {
 						errorObj && typeof errorObj === 'object' && !Array.isArray(errorObj)
 							? ((errorObj as IDataObject).code as number | undefined)
 							: undefined;
-					
+
 					if (!this.continueOnFail()) {
 						const errorDetails = errorMessage
 							? ` API Error: ${errorMessage}${errorCode ? ` (Code: ${errorCode})` : ''}`
