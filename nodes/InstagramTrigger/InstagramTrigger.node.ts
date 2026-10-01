@@ -1,5 +1,6 @@
 import type {
 	IDataObject,
+	IHookFunctions,
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
@@ -32,7 +33,7 @@ export class InstagramTrigger implements INodeType {
 		icon: { light: 'file:../Instagram/instagram.svg', dark: 'file:../Instagram/instagram.dark.svg' },
 		group: ['trigger'],
 		version: 2,
-		usableAsTool: true,
+		subtitle: 'Instagram webhook',
 		description:
 			"Instagram trigger to receive real-time webhook events from Meta and start a workflow when an event is received.",
 		defaults: {
@@ -94,6 +95,20 @@ export class InstagramTrigger implements INodeType {
 					'Whether to skip X-Hub-Signature-256 verification. Enabled by default because n8n may not provide raw body for signature verification; disable only if you have confirmed verification works in your setup.',
 			},
 		],
+	};
+
+	webhookMethods = {
+		default: {
+			async checkExists(this: IHookFunctions): Promise<boolean> {
+				return true;
+			},
+			async create(this: IHookFunctions): Promise<boolean> {
+				return true;
+			},
+			async delete(this: IHookFunctions): Promise<boolean> {
+				return true;
+			},
+		},
 	};
 
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {

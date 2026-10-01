@@ -8,7 +8,7 @@ import type {
 export class InstagramWebhookApi implements ICredentialType {
 	name = 'instagramWebhookApi';
 	displayName = 'Instagram Webhook API';
-	icon: Icon = 'file:instagram.svg';
+	icon: Icon = { light: 'file:instagram.svg', dark: 'file:instagram.svg' };
 	documentationUrl =
 		'https://developers.facebook.com/docs/graph-api/webhooks/getting-started';
 	test: ICredentialTestRequest = {

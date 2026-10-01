@@ -1,11 +1,17 @@
 {
 	"compilerOptions": {
 		"strict": true,
-		"module": "commonjs",
-		"moduleResolution": "node",
+		"module": "nodenext",
+		"moduleResolution": "nodenext",
 		"target": "es2019",
-		"lib": ["es2019", "es2020", "es2022.error"],
-		"types": ["node"],
+		"lib": [
+			"es2019",
+			"es2020",
+			"es2022.error"
+		],
+		"types": [
+			"node"
+		],
 		"removeComments": true,
 		"useUnknownInCatchVariables": false,
 		"forceConsistentCasingInFileNames": true,
@@ -22,5 +28,10 @@
 		"skipLibCheck": true,
 		"outDir": "./dist/"
 	},
-	"include": ["credentials/**/*", "nodes/**/*", "nodes/**/*.json", "package.json"]
+	"include": [
+		"credentials/**/*",
+		"nodes/**/*",
+		"nodes/**/*.json",
+		"package.json"
+	]
 }

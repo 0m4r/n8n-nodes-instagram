@@ -17,6 +17,11 @@ import type { InstagramResourceType } from './resources/types';
 const READY_STATUSES = new Set(['FINISHED', 'PUBLISHED', 'READY']);
 const ERROR_STATUSES = new Set(['ERROR', 'FAILED']);
 
+const toNodeError = (
+	node: ConstructorParameters<typeof NodeApiError>[0],
+	error: unknown,
+) => error instanceof NodeOperationError ? error : new NodeApiError(node, error as JsonObject);
+
 export class Instagram implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Instagram',
@@ -24,6 +29,7 @@ export class Instagram implements INodeType {
 		icon: { light: 'file:instagram.svg', dark: 'file:instagram.dark.svg' },
 		group: ['transform'],
 		version: 1,
+		subtitle: '={{$parameter["operation"]}}',
 		description: 'Publish media to Instagram using Facebook Graph API',
 		defaults: {
 			name: 'Instagram',
@@ -931,7 +937,6 @@ export class Instagram implements INodeType {
 		listSearch: {
 			async searchInstagramAccounts(
 				this: ILoadOptionsFunctions,
-				filter?: string,
 			): Promise<INodeListSearchResult> {
 				const returnData: INodePropertyOptions[] = [];
 
@@ -943,7 +948,7 @@ export class Instagram implements INodeType {
 						if (credentials?.apiEndpoint && typeof credentials.apiEndpoint === 'string') {
 							hostUrl = credentials.apiEndpoint;
 						}
-					} catch (error) {
+					} catch {
 						// Use default if credentials can't be retrieved
 					}
 
@@ -977,7 +982,7 @@ export class Instagram implements INodeType {
 							value: String(response.id),
 						});
 					}
-				} catch (error) {
+				} catch {
 					// If API call fails, return empty results (user can enter ID manually)
 					// The resourceLocator 'By ID' mode will still be available
 				}
@@ -998,7 +1003,7 @@ export class Instagram implements INodeType {
 			if (credentials?.apiEndpoint && typeof credentials.apiEndpoint === 'string') {
 				hostUrl = credentials.apiEndpoint;
 			}
-		} catch (error) {
+		} catch {
 			// If we can't get credentials, we'll use the default value
 			// This ensures backward compatibility
 		}
@@ -1137,7 +1142,7 @@ export class Instagram implements INodeType {
 
 					// If it's a known error status or NodeOperationError, rethrow it immediately
 					if (error instanceof NodeOperationError) {
-						throw error;
+						throw toNodeError(this.getNode(), error);
 					}
 
 					// Check if error indicates container failure (e.g., 404, invalid container)
@@ -1221,7 +1226,7 @@ export class Instagram implements INodeType {
 					}
 				} catch (error) {
 					if (error instanceof NodeOperationError) {
-						throw error;
+						throw toNodeError(this.getNode(), error);
 					}
 					throw new NodeOperationError(
 						this.getNode(),
@@ -1241,7 +1246,7 @@ export class Instagram implements INodeType {
 					}
 				} catch (error) {
 					if (error instanceof NodeOperationError) {
-						throw error;
+						throw toNodeError(this.getNode(), error);
 					}
 					throw new NodeOperationError(
 						this.getNode(),
@@ -1265,7 +1270,7 @@ export class Instagram implements INodeType {
 						}
 					} catch (error) {
 						if (error instanceof NodeOperationError) {
-							throw error;
+							throw toNodeError(this.getNode(), error);
 						}
 						throw new NodeOperationError(
 							this.getNode(),
@@ -1289,7 +1294,7 @@ export class Instagram implements INodeType {
 						}
 					} catch (error) {
 						if (error instanceof NodeOperationError) {
-							throw error;
+							throw toNodeError(this.getNode(), error);
 						}
 						throw new NodeOperationError(
 							this.getNode(),
@@ -1313,7 +1318,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -1333,7 +1338,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -1379,7 +1384,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -1504,7 +1509,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -1534,7 +1539,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -1554,7 +1559,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -1594,7 +1599,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -1636,7 +1641,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -1721,7 +1726,7 @@ export class Instagram implements INodeType {
 							}
 						} catch (error) {
 							if (error instanceof NodeOperationError) {
-								throw error;
+								throw toNodeError(this.getNode(), error);
 							}
 							throw new NodeOperationError(
 								this.getNode(),
@@ -1742,7 +1747,7 @@ export class Instagram implements INodeType {
 							}
 						} catch (error) {
 							if (error instanceof NodeOperationError) {
-								throw error;
+								throw toNodeError(this.getNode(), error);
 							}
 							throw new NodeOperationError(
 								this.getNode(),
@@ -1762,7 +1767,7 @@ export class Instagram implements INodeType {
 							}
 						} catch (error) {
 							if (error instanceof NodeOperationError) {
-								throw error;
+								throw toNodeError(this.getNode(), error);
 							}
 							throw new NodeOperationError(
 								this.getNode(),
@@ -1928,7 +1933,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -2170,7 +2175,7 @@ export class Instagram implements INodeType {
 						}
 					} catch (error) {
 						if (error instanceof NodeOperationError) {
-							throw error;
+							throw toNodeError(this.getNode(), error);
 						}
 						throw new NodeOperationError(
 							this.getNode(),
@@ -2194,7 +2199,7 @@ export class Instagram implements INodeType {
 						}
 					} catch (error) {
 						if (error instanceof NodeOperationError) {
-							throw error;
+							throw toNodeError(this.getNode(), error);
 						}
 						throw new NodeOperationError(
 							this.getNode(),
@@ -2217,7 +2222,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -2257,7 +2262,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -2286,7 +2291,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -2306,7 +2311,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -2326,7 +2331,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -2399,7 +2404,7 @@ export class Instagram implements INodeType {
 									}
 								} catch (error) {
 									if (error instanceof NodeOperationError) {
-										throw error;
+										throw toNodeError(this.getNode(), error);
 									}
 									throw new NodeOperationError(
 										this.getNode(),
@@ -2492,7 +2497,7 @@ export class Instagram implements INodeType {
 						}
 					} catch (error) {
 						if (error instanceof NodeOperationError) {
-							throw error;
+							throw toNodeError(this.getNode(), error);
 						}
 						throw new NodeOperationError(
 							this.getNode(),
@@ -2512,7 +2517,7 @@ export class Instagram implements INodeType {
 						}
 					} catch (error) {
 						if (error instanceof NodeOperationError) {
-							throw error;
+							throw toNodeError(this.getNode(), error);
 						}
 						throw new NodeOperationError(
 							this.getNode(),
@@ -2553,7 +2558,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -2622,7 +2627,7 @@ export class Instagram implements INodeType {
 						}
 					} catch (error) {
 						if (error instanceof NodeOperationError) {
-							throw error;
+							throw toNodeError(this.getNode(), error);
 						}
 						throw new NodeOperationError(
 							this.getNode(),
@@ -2646,7 +2651,7 @@ export class Instagram implements INodeType {
 						}
 					} catch (error) {
 						if (error instanceof NodeOperationError) {
-							throw error;
+							throw toNodeError(this.getNode(), error);
 						}
 						throw new NodeOperationError(
 							this.getNode(),
@@ -2697,7 +2702,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -2725,7 +2730,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -2745,7 +2750,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -2815,7 +2820,7 @@ export class Instagram implements INodeType {
 									}
 								} catch (error) {
 									if (error instanceof NodeOperationError) {
-										throw error;
+										throw toNodeError(this.getNode(), error);
 									}
 									throw new NodeOperationError(
 										this.getNode(),
@@ -2908,7 +2913,7 @@ export class Instagram implements INodeType {
 						}
 					} catch (error) {
 						if (error instanceof NodeOperationError) {
-							throw error;
+							throw toNodeError(this.getNode(), error);
 						}
 						throw new NodeOperationError(
 							this.getNode(),
@@ -2931,7 +2936,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -2967,7 +2972,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -2993,7 +2998,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -3034,7 +3039,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -3060,7 +3065,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -3097,7 +3102,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -3123,7 +3128,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -3164,7 +3169,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -3197,7 +3202,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -3217,7 +3222,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -3237,7 +3242,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -3283,7 +3288,7 @@ export class Instagram implements INodeType {
 								}
 							} catch (error) {
 								if (error instanceof NodeOperationError) {
-									throw error;
+									throw toNodeError(this.getNode(), error);
 								}
 								throw new NodeOperationError(
 									this.getNode(),
@@ -3372,7 +3377,7 @@ export class Instagram implements INodeType {
 					}
 				} catch (error) {
 					if (error instanceof NodeOperationError) {
-						throw error;
+						throw toNodeError(this.getNode(), error);
 					}
 					throw new NodeOperationError(
 						this.getNode(),
@@ -3393,7 +3398,7 @@ export class Instagram implements INodeType {
 					}
 				} catch (error) {
 					if (error instanceof NodeOperationError) {
-						throw error;
+						throw toNodeError(this.getNode(), error);
 					}
 					throw new NodeOperationError(
 						this.getNode(),
@@ -3413,7 +3418,7 @@ export class Instagram implements INodeType {
 					}
 				} catch (error) {
 					if (error instanceof NodeOperationError) {
-						throw error;
+						throw toNodeError(this.getNode(), error);
 					}
 					throw new NodeOperationError(
 						this.getNode(),
@@ -3433,7 +3438,7 @@ export class Instagram implements INodeType {
 					}
 				} catch (error) {
 					if (error instanceof NodeOperationError) {
-						throw error;
+						throw toNodeError(this.getNode(), error);
 					}
 					throw new NodeOperationError(
 						this.getNode(),
@@ -3467,7 +3472,7 @@ export class Instagram implements INodeType {
 					}
 				} catch (error) {
 					if (error instanceof NodeOperationError) {
-						throw error;
+						throw toNodeError(this.getNode(), error);
 					}
 					throw new NodeOperationError(
 						this.getNode(),
@@ -3786,7 +3791,7 @@ export class Instagram implements INodeType {
 					});
 				} catch (error) {
 					if (error instanceof NodeOperationError) {
-						throw error;
+						throw toNodeError(this.getNode(), error);
 					}
 					throw new NodeOperationError(
 						this.getNode(),
