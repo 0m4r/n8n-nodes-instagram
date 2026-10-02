@@ -1,8 +1,9 @@
-![Banner image](assets/banner_instagram_node.jpeg)
+> This fork is maintained by [0m4r](https://github.com/0m4r) and is based on [MookieLian's original project](https://github.com/MookieLian/n8n-nodes-instagram).  
+> Please use [this fork's issue tracker](https://github.com/0m4r/n8n-nodes-instagram/issues) for questions or bug reports.
 
 # @0m4r/n8n-nodes-instagram
 
-This fork is maintained by [0m4r](https://github.com/0m4r) and is based on [MookieLian's original project](https://github.com/MookieLian/n8n-nodes-instagram). Please use [this fork's issue tracker](https://github.com/0m4r/n8n-nodes-instagram/issues) for questions or bug reports.
+
 
 This package’s Instagram nodes for n8n let you publish and manage content, moderate comments, send DMs, and react to real-time events (comments, messages, mentions, story insights, etc.) on Instagram Business and Creator accounts via the Facebook/Instagram Graph API.
 
