@@ -23,6 +23,7 @@
     "lint:fix": "node scripts/run-eslint.js --fix",
     "setup-hooks": "husky",
     "release": "n8n-node release",
+    "release:beta": "release-it --preRelease=beta --npm.publish=false",
     "prepublishOnly": "n8n-node prerelease",
     "typecheck": "npm exec -- tsc --noEmit"
   },
