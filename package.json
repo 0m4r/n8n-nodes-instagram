@@ -1,6 +1,6 @@
 {
   "name": "@0m4r/n8n-nodes-instagram",
-  "version": "3.2.1",
+  "version": "4.0.0-beta.0",
   "description": "Instagram node for n8n",
   "license": "MIT",
   "homepage": "https://github.com/0m4r/n8n-nodes-instagram#readme",
