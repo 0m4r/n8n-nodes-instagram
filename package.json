@@ -16,11 +16,10 @@
     "url": "git+https://github.com/0m4r/n8n-nodes-instagram.git"
   },
   "scripts": {
-    "build": "node scripts/run-tsc.js",
-    "build:watch": "node scripts/run-tsc.js --watch",
+    "build": "n8n-node build",
     "dev": "n8n-node dev",
-    "lint": "npx n8n-node lint",
-    "lint:fix": "npx n8n-node lint --fix",
+    "lint": "n8n-node lint",
+    "lint:fix": "n8n-node lint --fix",
     "format": "npx prettier --config .prettierrc.js --write \"**/*.{ts,js,json,md}\"",
     "setup-hooks": "husky",
     "release": "n8n-node release",
