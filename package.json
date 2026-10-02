@@ -4,8 +4,13 @@
   "description": "Instagram node for n8n",
   "license": "MIT",
   "homepage": "https://github.com/MookieLian/n8n-nodes-instagram",
-  "keywords": ["n8n-community-node-package"],
-  "author": { "name": "MookieLian", "email": "mookielianhd@gmail.com" },
+  "keywords": [
+    "n8n-community-node-package"
+  ],
+  "author": {
+    "name": "MookieLian",
+    "email": "mookielianhd@gmail.com"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/MookieLian/n8n-nodes-instagram.git"
@@ -20,7 +25,9 @@
     "prepublishOnly": "n8n-node prerelease",
     "typecheck": "npm exec -- tsc --noEmit"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "n8n": {
     "n8nNodesApiVersion": 1,
     "strict": true,
@@ -35,17 +42,19 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
-    "@n8n/node-cli": "^0.50.3",
+    "@n8n/node-cli": "^0.50.4",
     "@types/estree": "^1.0.9",
     "@types/json-schema": "^7.0.15",
-    "@types/node": "^26.6.3",
+    "@types/node": "^24.18.0",
     "eslint": "^9.39.5",
-    "globals": "^17.12.0",
+    "globals": "^17.13.0",
     "n8n-workflow": ">=2.16.0",
     "prettier": "3.9.9",
     "release-it": "^21.1.0",
     "typescript": "^6",
     "typescript-eslint": "^8.71.0"
   },
-  "peerDependencies": { "n8n-workflow": "*" }
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
 }

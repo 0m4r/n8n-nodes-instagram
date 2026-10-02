@@ -40,13 +40,15 @@ The node exposes several resources:
 
 ## Credentials
 
-Create an **Instagram API** credential that stores a long-lived Facebook Graph API user access token with at least:
+Create an **Instagram API** credential and provide an access token with permissions for the selected API endpoint.
+
+For the **Facebook Graph API** endpoint, use a Facebook Login token and grant at least:
 
 - `instagram_basic`
 - `pages_show_list`
 - `instagram_content_publish`
 - `pages_read_engagement`
-- `instagram_manage_comments` (or `instagram_business_manage_comments` if using Instagram Login)
+- `instagram_manage_comments`
   Steps:
 
 1. Make sure the Instagram account is a Business/Creator account connected to a Facebook Page.
@@ -54,10 +56,10 @@ Create an **Instagram API** credential that stores a long-lived Facebook Graph A
 3. Convert it to a long-lived token and paste it into the credential's **Access Token** field.
 4. **Select API Endpoint**: Choose between:
    - **Facebook Graph API** (`graph.facebook.com`) - Default option, recommended for most use cases
-   - **Instagram Graph API** (`graph.instagram.com`) - Alternative endpoint for Instagram-specific operations
+   - **Instagram Graph API** (`graph.instagram.com`) - Use an Instagram Login token and permissions for Instagram Login.
 5. The built-in credential test uses v26.0 to confirm the token works.
 
-**Note**: All node operations will use the API endpoint you select in the credential configuration. You can switch between endpoints at any time by updating your credential settings. The default `graph.facebook.com` endpoint works for all Instagram Business API operations.
+**Warning**: The Instagram Graph API endpoint has limited operation support. Page lookup and hashtag search require the Facebook Graph API endpoint. Changing the endpoint does not convert your token, change its login flow, or grant permissions. Use a token issued for the selected API. The Facebook Graph API endpoint is the recommended choice for the full set of node operations.
 
 ### Instagram Webhook Trigger credentials
 

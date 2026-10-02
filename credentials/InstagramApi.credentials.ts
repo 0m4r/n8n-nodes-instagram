@@ -19,7 +19,7 @@ export class InstagramApi implements ICredentialType {
 			typeOptions: { password: true },
 			required: true,
 			default: '',
-			description: 'Instagram Graph API user access token with publish permissions',
+			description: 'Access token with permissions for the selected API endpoint',
 		},
 		{
 			displayName: 'API Endpoint',
@@ -34,11 +34,13 @@ export class InstagramApi implements ICredentialType {
 				{
 					name: 'Instagram Graph API',
 					value: 'graph.instagram.com',
-					description: 'Use graph.instagram.com endpoint',
+					description:
+						'Limited support: Page lookup and hashtag search require Facebook Graph API. Use an Instagram Login access token.',
 				},
 			],
 			default: 'graph.facebook.com',
-			description: 'Select the API endpoint to use for requests',
+			description:
+				'WARNING: Instagram Graph API does not support all node operations (including Page lookup and hashtag search). Changing this endpoint does not convert your access token or grant permissions; use a token issued for the selected API.',
 		},
 	];
 	authenticate: IAuthenticateGeneric = {
