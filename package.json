@@ -24,7 +24,7 @@
     "setup-hooks": "husky",
     "release:prepare": "npx n8n-node release --init-workflow",
     "release:beta": "release-it --preRelease=beta --npm.publish=false",
-    "release": "release-it --npm.publish=false -d",
+    "release": "release-it --npm.publish=false",
     "prepublishOnly": "n8n-node prerelease",
     "typecheck": "npm exec -- tsc --noEmit"
   },
