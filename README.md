@@ -1,9 +1,11 @@
+# @0m4r/n8n-nodes-instagram
+
+---
+
 > This fork is maintained by [0m4r](https://github.com/0m4r) and is based on [MookieLian's original project](https://github.com/MookieLian/n8n-nodes-instagram).  
 > Please use [this fork's issue tracker](https://github.com/0m4r/n8n-nodes-instagram/issues) for questions or bug reports.
 
-# @0m4r/n8n-nodes-instagram
-
-
+---
 
 This package’s Instagram nodes for n8n let you publish and manage content, moderate comments, send DMs, and react to real-time events (comments, messages, mentions, story insights, etc.) on Instagram Business and Creator accounts via the Facebook/Instagram Graph API.
 
@@ -76,10 +78,10 @@ The **Instagram Trigger** node listens for real-time webhook events from Meta an
 
 ### Setup
 
-1. **Create the credential**  
+1. **Create the credential**
    Add an **Instagram Webhook** credential and enter your Meta **App Secret** (from your app’s Settings → Basic in the Meta App Dashboard).
 
-2. **Add the trigger to your workflow**  
+2. **Add the trigger to your workflow**
    Add the **Instagram Trigger** node. Set **Verify Token** to any string you will use in the Meta Dashboard (e.g. a random secret). Copy the **Webhook URL** shown in the node (Production or Test URL).
 
 3. **Configure Webhooks in Meta App Dashboard**
@@ -90,7 +92,7 @@ The **Instagram Trigger** node listens for real-time webhook events from Meta an
    - Subscribe to the Instagram fields you need (e.g. `comments`, `messages`, `mentions`, `story_insights`).
    - Save. Meta will send a GET request to your URL; the node responds with the challenge so verification succeeds.
 
-4. **Optional: filter events**  
+4. **Optional: filter events**
    Use **Events to Include** on the node to pass only selected event types (e.g. only `messages` and `mentions`) to the workflow. If left empty, all received events are output.
 
 Each event is output as an item with `object`, `field`, `value`, `id`, `time` and the raw change payload, so you can use the **Instagram** node (e.g. Messaging, Comments) in the same workflow to reply or moderate. To return a custom response to the caller instead of the default 200 OK, add a **Respond to Webhook** node after the trigger.

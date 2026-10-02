@@ -2,10 +2,7 @@
   "node": "@0m4r/n8n-nodes-instagram.instagram",
   "nodeVersion": "1.0",
   "codexVersion": "1.0",
-  "categories": [
-    "Development",
-    "Developer Tools"
-  ],
+  "categories": ["Development", "Developer Tools"],
   "resources": {
     "credentialDocumentation": [
       {

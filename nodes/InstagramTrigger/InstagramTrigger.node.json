@@ -2,11 +2,7 @@
   "node": "@0m4r/n8n-nodes-instagram.instagramTrigger",
   "nodeVersion": "1.0",
   "codexVersion": "1.0",
-  "categories": [
-    "Development",
-    "Developer Tools",
-    "Trigger"
-  ],
+  "categories": ["Development", "Developer Tools", "Trigger"],
   "resources": {
     "credentialDocumentation": [
       {
