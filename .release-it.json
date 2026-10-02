@@ -1,5 +1,5 @@
 {
   "git": {
-    "commitMessage": "chore: release v%s"
+    "commitMessage": "chore: release v${version}"
   }
 }
