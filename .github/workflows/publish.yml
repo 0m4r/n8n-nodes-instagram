@@ -8,8 +8,8 @@
 # ─── PREREQUISITES ─────────────────────────────────────────────────────────────
 #
 # @n8n/node-cli ≥ 0.23.0 is required. Earlier versions do not support the
-# provenance flag passed by `npm run release` in CI, and the publish step will
-# fail. Check the version installed in this project with:
+# provenance flag, and the publish step will fail. Check the version installed
+# in this project with:
 #
 #   npm list @n8n/node-cli
 #
@@ -69,7 +69,7 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.ref }}
 
@@ -81,7 +81,10 @@ jobs:
           package-manager-cache: false
 
       - name: Install dependencies
-        run: 'npm ci'
+        run: npm ci
+
+      - name: Build package
+        run: npm run build
 
       - name: Verify tag matches package version
         env:
@@ -94,13 +97,7 @@ jobs:
             exit 1
           fi
 
-      - name: Release
-        # Publishes to npm with a provenance attestation (requires id-token: write above).
-        # Lint and build run automatically as part of the release process.
-        #
-        # Option A (OIDC): leave NPM_TOKEN unset — npm uses the OIDC exchange.
-        # Option B (token): set NPM_TOKEN in repo secrets; setup-node reads
-        # NODE_AUTH_TOKEN from the environment for token-based publishing.
-        run: npm run release
+      - name: Publish to npm with provenance
+        run: npm publish --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
