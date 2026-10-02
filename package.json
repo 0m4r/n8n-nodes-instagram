@@ -21,6 +21,7 @@
     "dev": "n8n-node dev",
     "lint": "npx n8n-node lint",
     "lint:fix": "node scripts/run-eslint.js --fix",
+    "setup-hooks": "husky",
     "release": "n8n-node release",
     "prepublishOnly": "n8n-node prerelease",
     "typecheck": "npm exec -- tsc --noEmit"
@@ -41,6 +42,8 @@
     ]
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
     "@eslint/js": "^9.39.5",
     "@n8n/node-cli": "^0.50.4",
     "@types/estree": "^1.0.9",
@@ -48,6 +51,7 @@
     "@types/node": "^24.18.0",
     "eslint": "^9.39.5",
     "globals": "^17.13.0",
+    "husky": "^9.1.7",
     "n8n-workflow": "2.41.2",
     "prettier": "3.9.9",
     "release-it": "^21.1.0",

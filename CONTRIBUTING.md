@@ -220,6 +220,8 @@ Bad examples:
 `fix stuff`
 `changes`
 
+Commit messages are checked locally by Commitlint using the Conventional Commits format. After `npm install`, enable the Git hook once with `npm run setup-hooks`.
+
 ---
 
 ## Pull request must include
