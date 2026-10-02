@@ -15,15 +15,15 @@ jobs:
     timeout-minutes: 720
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Use Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: '22'
+          node-version-file: '.nvmrc'
 
       - name: Cache npm
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.npm
           key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
@@ -33,16 +33,16 @@ jobs:
       - name: Install dependencies
         run: |
           # Use a single deterministic install; npm ci is preferred when package-lock.json exists
-          npm ci --legacy-peer-deps
-          # Install n8n-workflow without saving to package.json (only if you cannot add it to package.json)
-          npm install --no-package-lock --no-save --legacy-peer-deps n8n-workflow@">=2.6.1"
-
+          npm ci
+      - name: Typecheck (bounded)
+        # Use timeout to prevent infinite hang; adjust seconds as needed
+        run: |
+          npm run typecheck
       - name: Lint (bounded)
         # Use timeout to prevent infinite hang; adjust seconds as needed
         run: |
-          timeout 1800s npx n8n-node lint
+          npm run lint
 
       - name: Run build (bounded)
         run: |
-          # optional: increase verbosity in your build script or add periodic echo so logs show progress
-          timeout 5400s npm run build
+          npm run build

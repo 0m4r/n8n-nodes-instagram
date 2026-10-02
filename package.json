@@ -1,28 +1,31 @@
 {
-  "name": "@mookielianhd/n8n-nodes-instagram",
-  "version": "3.2.1",
+  "name": "@0m4r/n8n-nodes-instagram",
+  "version": "4.0.0-beta.0",
   "description": "Instagram node for n8n",
   "license": "MIT",
-  "homepage": "",
+  "homepage": "https://github.com/0m4r/n8n-nodes-instagram#readme",
   "keywords": [
     "n8n-community-node-package"
   ],
   "author": {
-    "name": "MookieLian",
-    "email": "mookielianhd@gmail.com"
+    "name": "0m4r",
+    "email": "0m4r@users.noreply.github.com"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MookieLian/n8n-nodes-instagram.git"
+    "url": "git+https://github.com/0m4r/n8n-nodes-instagram.git"
   },
   "scripts": {
-    "build": "node scripts/run-tsc.js",
-    "build:watch": "node scripts/run-tsc.js --watch",
+    "build": "n8n-node build",
     "dev": "n8n-node dev",
-    "lint": "npx n8n-node lint",
-    "lint:fix": "node scripts/run-eslint.js --fix",
+    "lint": "n8n-node lint",
+    "lint:fix": "n8n-node lint --fix",
+    "format": "npx prettier --config .prettierrc.js --write \"**/*.{ts,js,json,md}\"",
+    "setup-hooks": "husky",
     "release": "n8n-node release",
-    "prepublishOnly": "n8n-node prerelease"
+    "release:beta": "release-it --preRelease=beta --npm.publish=false",
+    "prepublishOnly": "n8n-node prerelease",
+    "typecheck": "npm exec -- tsc --noEmit"
   },
   "files": [
     "dist"
@@ -40,20 +43,23 @@
     ]
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@n8n/node-cli": "^0.21.0",
-    "@types/estree": "^1.0.8",
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
+    "@eslint/js": "^9.39.5",
+    "@n8n/node-cli": "^0.50.4",
+    "@types/estree": "^1.0.9",
     "@types/json-schema": "^7.0.15",
-    "eslint": "^10.0.1",
-    "globals": "^17.3.0",
-    "prettier": "3.6.2",
-    "release-it": "^19.0.4",
-    "typescript": "5.9.3",
-    "typescript-eslint": "^8.56.1",
-    "@types/node": "^22.0.0",
-    "n8n-workflow": ">=2.6.1"
+    "@types/node": "^24.18.0",
+    "eslint": "^9.39.5",
+    "globals": "^17.13.0",
+    "husky": "^9.1.7",
+    "n8n-workflow": "2.41.2",
+    "prettier": "3.9.9",
+    "release-it": "^21.1.0",
+    "typescript": "^6",
+    "typescript-eslint": "^8.71.0"
   },
   "peerDependencies": {
-    "n8n-workflow": ">=2.6.1"
+    "n8n-workflow": "*"
   }
 }

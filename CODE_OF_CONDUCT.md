@@ -1,6 +1,6 @@
 # Code of Conduct
 
-## @mookielianhd/n8n-nodes-instagram
+## @0m4r/n8n-nodes-instagram
 
 This project is committed to providing a respectful, professional, and inclusive environment for all contributors and users. By participating in this repository, you agree to follow this Code of Conduct.
 
