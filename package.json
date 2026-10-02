@@ -22,8 +22,9 @@
     "lint:fix": "n8n-node lint --fix",
     "format": "npx prettier --config .prettierrc.js --write \"**/*.{ts,js,json,md}\"",
     "setup-hooks": "husky",
-    "release": "n8n-node release",
+    "release:prepare": "npx n8n-node release --init-workflow",
     "release:beta": "release-it --preRelease=beta --npm.publish=false",
+    "release": "release-it --npm.publish=false -d",
     "prepublishOnly": "n8n-node prerelease",
     "typecheck": "npm exec -- tsc --noEmit"
   },
