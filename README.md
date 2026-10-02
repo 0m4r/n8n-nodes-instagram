@@ -1,6 +1,8 @@
 ![Banner image](assets/banner_instagram_node.jpeg)
 
-# @mookielianhd/n8n-nodes-instagram
+# @0m4r/n8n-nodes-instagram
+
+This fork is maintained by [0m4r](https://github.com/0m4r) and is based on [MookieLian's original project](https://github.com/MookieLian/n8n-nodes-instagram). Please use [this fork's issue tracker](https://github.com/0m4r/n8n-nodes-instagram/issues) for questions or bug reports.
 
 This package’s Instagram nodes for n8n let you publish and manage content, moderate comments, send DMs, and react to real-time events (comments, messages, mentions, story insights, etc.) on Instagram Business and Creator accounts via the Facebook/Instagram Graph API.
 
@@ -94,9 +96,9 @@ Each event is output as an item with `object`, `field`, `value`, `id`, `time` an
 
 ## Compatibility
 
-- Built and tested against **n8n 2.6.x–2.8.x**.
-- Declares a peer dependency on **`n8n-workflow >=2.6.1`** (the first secure stream-enabled version suggested by Snyk).
-- Requires n8n with community nodes enabled (recommended `>=2.x`).
+- Built and typechecked against **`n8n-workflow 2.41.2`**, the current stable release.
+- Declares a peer dependency on **`n8n-workflow *`** as required by n8n's strict community-node linter. Compatibility with earlier workflow versions is not verified.
+- Requires n8n with community nodes enabled.
 - Uses only built-in n8n dependencies, so it is Cloud-compatible.
 
 ## Usage

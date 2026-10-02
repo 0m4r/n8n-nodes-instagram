@@ -10,7 +10,7 @@ export class InstagramApi implements ICredentialType {
 	name = 'instagramApi';
 	displayName = 'Instagram API';
 	icon: Icon = { light: 'file:instagram.svg', dark: 'file:instagram.svg' };
-	documentationUrl = 'https://github.com/MookieLian/n8n-nodes-instagram#credentials';
+	documentationUrl = 'https://github.com/0m4r/n8n-nodes-instagram#credentials';
 	properties: INodeProperties[] = [
 		{
 			displayName: 'Access Token',
