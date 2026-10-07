@@ -24,7 +24,7 @@ const filterOutput = (destination) => {
 };
 
 const command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-const vitest = spawn(command, ['vitest', 'run', ...process.argv.slice(2)], {
+const vitest = spawn(command, ['vitest', 'run', '--exclude', 'dist/**', ...process.argv.slice(2)], {
   cwd: resolve(__dirname, '..'),
   env: process.env,
   stdio: ['inherit', 'pipe', 'pipe'],
