@@ -34,6 +34,9 @@ jobs:
         run: |
           # Use a single deterministic install; npm ci is preferred when package-lock.json exists
           npm ci
+      - name: Test
+        # A non-zero npm test exit code fails this required workflow step.
+        run: npm test
       - name: Typecheck (bounded)
         # Use timeout to prevent infinite hang; adjust seconds as needed
         run: |

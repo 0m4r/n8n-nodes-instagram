@@ -11,11 +11,9 @@ import type {
   JsonObject,
 } from 'n8n-workflow';
 import { NodeApiError, NodeConnectionTypes, NodeOperationError, sleep } from 'n8n-workflow';
+import { interpretContainerStatus } from './containerStatus';
 import { instagramResourceFields, instagramResourceHandlers } from './resources';
 import type { InstagramResourceType } from './resources/types';
-
-const READY_STATUSES = new Set(['FINISHED', 'PUBLISHED', 'READY']);
-const ERROR_STATUSES = new Set(['ERROR', 'FAILED']);
 
 const toNodeError = (node: ConstructorParameters<typeof NodeApiError>[0], error: unknown) =>
   error instanceof NodeOperationError ? error : new NodeApiError(node, error as JsonObject);
@@ -1036,21 +1034,31 @@ export class Instagram implements INodeType {
       // This ensures backward compatibility
     }
 
+    type ContainerReadyResult = {
+      containerId: string;
+      finalStatusCode: string;
+      finalStatusMessage?: string;
+      pollingDurationSeconds: number;
+      pollIntervalMs: number;
+      maxTotalTimeMs: number;
+      pollCount: number;
+    };
+
     const waitForContainerReady = async ({
       creationId,
       hostUrl,
       graphApiVersion,
       itemIndex,
-      pollIntervalMs,
-      maxPollAttempts,
+      pollIntervalMs = 5000,
+      maxTotalTimeMs = 15 * 60 * 1000,
     }: {
       creationId: string;
       hostUrl: string;
       graphApiVersion: string;
       itemIndex: number;
-      pollIntervalMs: number;
-      maxPollAttempts: number;
-    }) => {
+      pollIntervalMs?: number;
+      maxTotalTimeMs?: number;
+    }): Promise<ContainerReadyResult> => {
       if (!creationId || typeof creationId !== 'string') {
         throw new NodeOperationError(
           this.getNode(),
@@ -1068,7 +1076,6 @@ export class Instagram implements INodeType {
       }
 
       const statusUri = `https://${hostUrl}/${graphApiVersion}/${creationId}`;
-      const statusFields = ['status_code', 'status'];
 
       const pollRequestOptions: IHttpRequestOptions = {
         headers: {
@@ -1077,28 +1084,31 @@ export class Instagram implements INodeType {
         method: 'GET',
         url: statusUri,
         qs: {
-          fields: statusFields.join(','),
+          fields: 'status_code,status',
         },
         json: true,
       };
 
-      let lastStatus: string | undefined;
+      const startTime = Date.now();
+      const deadline = startTime + maxTotalTimeMs;
+
+      let lastStatusCode: string | undefined;
+      let lastStatusMessage: string | undefined;
       let lastError: unknown;
       let consecutiveErrors = 0;
-      const maxConsecutiveErrors = 3; // Fail fast after 3 consecutive errors
-      const startTime = Date.now();
-      const maxTotalTimeMs = 90000; // Maximum 90 seconds total polling time
+      let pollCount = 0;
+      let slowWarningSent = false;
 
-      for (let attempt = 1; attempt <= maxPollAttempts; attempt++) {
-        // Check if we've exceeded maximum total time
-        const elapsedTime = Date.now() - startTime;
-        if (elapsedTime > maxTotalTimeMs) {
-          throw new NodeOperationError(
-            this.getNode(),
-            `Polling timeout: Exceeded maximum polling time of ${maxTotalTimeMs / 1000} seconds. Container ID: ${creationId}, Last known status: ${lastStatus ?? 'unknown'}, Attempts: ${attempt}/${maxPollAttempts}.`,
-            { itemIndex },
-          );
-        }
+      const maxConsecutiveErrors = 5;
+
+      this.logger.info(
+        `Instagram: waiting for container ${creationId} to become ready (max ${Math.round(
+          maxTotalTimeMs / 1000,
+        )}s, polling every ${Math.round(pollIntervalMs / 1000)}s).`,
+      );
+
+      while (Date.now() < deadline) {
+        pollCount++;
 
         try {
           const statusResponse = (await this.helpers.httpRequestWithAuthentication.call(
@@ -1109,103 +1119,163 @@ export class Instagram implements INodeType {
 
           if (!statusResponse || typeof statusResponse !== 'object') {
             consecutiveErrors++;
+
+            this.logger.warn(
+              `Instagram: received invalid status response for container ${creationId} (${consecutiveErrors}/${maxConsecutiveErrors}).`,
+            );
+
             if (consecutiveErrors >= maxConsecutiveErrors) {
               throw new NodeOperationError(
                 this.getNode(),
-                `Invalid response format received while polling container status (${consecutiveErrors} consecutive errors). Expected object, got: ${typeof statusResponse}. Response: ${JSON.stringify(statusResponse)}. Container ID: ${creationId}.`,
+                `Invalid response format received while polling Instagram container. Container ID: ${creationId}. Response: ${JSON.stringify(
+                  statusResponse,
+                )}`,
                 { itemIndex },
               );
             }
-            // Continue with shorter interval on error
-            const errorInterval = Math.min(pollIntervalMs, 1000);
-            await sleep(errorInterval);
+
+            await sleep(pollIntervalMs);
             continue;
           }
 
-          // Reset consecutive error counter on successful response
           consecutiveErrors = 0;
 
-          const statuses = statusFields
-            .map((field) => statusResponse[field as keyof IDataObject])
-            .filter((value): value is string => typeof value === 'string')
-            .map((value) => value.toUpperCase());
+          const containerStatus = interpretContainerStatus(statusResponse);
+          lastStatusCode = containerStatus.statusCode;
 
-          if (statuses.length > 0) {
-            lastStatus = statuses[0];
-          }
+          const rawStatus = statusResponse.status;
+          lastStatusMessage =
+            typeof rawStatus === 'string'
+              ? rawStatus
+              : rawStatus && typeof rawStatus === 'object'
+                ? JSON.stringify(rawStatus)
+                : undefined;
 
-          if (statuses.some((status) => READY_STATUSES.has(status))) {
-            return;
-          }
+          const elapsedSeconds = Math.round((Date.now() - startTime) / 1000);
+          const authoritativeStatus = containerStatus.authoritativeStatus ?? 'unknown';
 
-          if (statuses.some((status) => ERROR_STATUSES.has(status))) {
-            // Extract additional error details if available
-            const errorMessage = statusResponse.error_message as string | undefined;
-            const errorDetails = errorMessage ? ` Error details: ${errorMessage}` : '';
+          this.logger.info(
+            `Instagram: container ${creationId} status=${authoritativeStatus}, elapsed=${elapsedSeconds}s, poll=${pollCount}.`,
+          );
+
+          // A failure in either Graph status field always wins over a ready value.
+          if (containerStatus.state === 'failure') {
+            const statusError =
+              typeof statusResponse.error_message === 'string'
+                ? statusResponse.error_message
+                : undefined;
+
+            this.logger.error(
+              `Instagram: container ${creationId} failed with status ${authoritativeStatus} on poll ${pollCount}. ${statusError ? `Details: ${statusError}` : ''
+              }`,
+            );
+
             throw new NodeOperationError(
               this.getNode(),
-              `Media container reported error status (${statuses.join(', ')}) while waiting to publish. Container ID: ${creationId}, Attempt: ${attempt}/${maxPollAttempts}.${errorDetails}`,
+              `Instagram container failed. Container ID: ${creationId}. Authoritative status: ${authoritativeStatus}. Poll attempt: ${pollCount}. ${statusError ? `Error details: ${statusError}.` : ''
+              }`,
               { itemIndex },
             );
           }
 
-          // Adaptive polling: Use progressively longer intervals
-          // - First 10 attempts: 500ms (very aggressive for quick containers)
-          // - Next 10 attempts: 1000ms (moderate)
-          // - Remaining attempts: configured interval (normal)
-          let effectiveInterval: number;
-          if (attempt <= 10) {
-            effectiveInterval = 500; // Very aggressive for first 10 attempts (~5 seconds)
-          } else if (attempt <= 20) {
-            effectiveInterval = 1000; // Moderate for next 10 attempts (~10 seconds)
-          } else {
-            effectiveInterval = pollIntervalMs; // Normal interval for remaining attempts
+          if (containerStatus.state === 'ready') {
+            this.logger.info(
+              `Instagram: container ${creationId} is ready after ${elapsedSeconds}s.`,
+            );
+
+            return {
+              containerId: creationId,
+              finalStatusCode: authoritativeStatus,
+              finalStatusMessage: lastStatusMessage,
+              pollingDurationSeconds: elapsedSeconds,
+              pollIntervalMs,
+              maxTotalTimeMs,
+              pollCount,
+            };
           }
-          await sleep(effectiveInterval);
+
+          // Optional warning for long-running processing.
+          if (
+            !slowWarningSent &&
+            lastStatusCode === 'IN_PROGRESS' &&
+            Date.now() - startTime >= 60_000
+          ) {
+            slowWarningSent = true;
+
+            this.logger.warn(
+              `Instagram: container ${creationId} has been processing for over 60 seconds.`,
+            );
+          }
+
+          // IN_PROGRESS and any other non-final status: keep waiting.
+          await sleep(pollIntervalMs);
         } catch (error) {
           lastError = error;
-          consecutiveErrors++;
 
-          // If it's a known error status or NodeOperationError, rethrow it immediately
+          // A definitive Instagram status error should stop immediately.
           if (error instanceof NodeOperationError) {
             throw toNodeError(this.getNode(), error);
           }
 
-          // Check if error indicates container failure (e.g., 404, invalid container)
+          consecutiveErrors++;
+
           const errorMessage =
-            error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
-          if (
+            error instanceof Error
+              ? error.message.toLowerCase()
+              : String(error).toLowerCase();
+
+          const isFatalRequestError =
             errorMessage.includes('invalid') ||
             errorMessage.includes('not found') ||
-            errorMessage.includes('404') ||
             errorMessage.includes('does not exist') ||
-            consecutiveErrors >= maxConsecutiveErrors
-          ) {
+            errorMessage.includes('404') ||
+            errorMessage.includes('401') ||
+            errorMessage.includes('403');
+
+          if (isFatalRequestError || consecutiveErrors >= maxConsecutiveErrors) {
+            this.logger.error(
+              `Instagram: failed to poll container ${creationId}. Last status: ${lastStatusCode ?? 'unknown'
+              }. Error: ${error instanceof Error ? error.message : String(error)
+              }`,
+            );
+
             throw new NodeOperationError(
               this.getNode(),
-              `Failed to poll container status after ${attempt} attempts (${consecutiveErrors} consecutive errors). Container may be invalid or failed. Last error: ${error instanceof Error ? error.message : String(error)}. Container ID: ${creationId}, Last known status: ${lastStatus ?? 'unknown'}.`,
+              `Failed to poll Instagram container status. Container ID: ${creationId}. Last status: ${lastStatusCode ?? 'unknown'
+              }. Last error: ${error instanceof Error ? error.message : String(error)
+              }`,
               { itemIndex },
             );
           }
 
-          // For other errors, continue polling but with shorter interval
-          if (attempt < maxPollAttempts) {
-            const errorInterval = Math.min(pollIntervalMs, 1000);
-            await sleep(errorInterval);
-            continue;
-          }
-          // If this was the last attempt, throw with context
-          throw new NodeOperationError(
-            this.getNode(),
-            `Failed to poll container status after ${maxPollAttempts} attempts. Last error: ${error instanceof Error ? error.message : String(error)}. Container ID: ${creationId}, Last known status: ${lastStatus ?? 'unknown'}.`,
-            { itemIndex },
+          this.logger.warn(
+            `Instagram: transient error while polling container ${creationId} (${consecutiveErrors}/${maxConsecutiveErrors}): ${error instanceof Error ? error.message : String(error)
+            }`,
           );
+
+          // Transient network/API issue: retry until the deadline.
+          await sleep(pollIntervalMs);
         }
       }
 
+      const elapsedSeconds = Math.round((Date.now() - startTime) / 1000);
+
+      this.logger.error(
+        `Instagram: timed out waiting for container ${creationId} after ${elapsedSeconds}s. Last status: ${lastStatusCode ?? 'unknown'
+        }.`,
+      );
+
       throw new NodeOperationError(
         this.getNode(),
-        `Timed out waiting for container to become ready after ${maxPollAttempts} attempts. Last known status: ${lastStatus ?? 'unknown'}. Container ID: ${creationId}. Last error: ${lastError instanceof Error ? lastError.message : lastError ? String(lastError) : 'none'}.`,
+        `Timed out waiting for Instagram container after ${maxTotalTimeMs / 1000
+        } seconds. Container ID: ${creationId}. Last status code: ${lastStatusCode ?? 'unknown'
+        }. Last status: ${lastStatusMessage ?? 'unknown'
+        }. Polls completed: ${pollCount}. Last polling error: ${lastError instanceof Error
+          ? lastError.message
+          : lastError
+            ? String(lastError)
+            : 'none'
+        }.`,
         { itemIndex },
       );
     };
@@ -1955,8 +2025,7 @@ export class Instagram implements INodeType {
                 }
                 throw new NodeOperationError(
                   this.getNode(),
-                  `Failed to get carousel media parameter at item index ${itemIndex}: ${
-                    error instanceof Error ? error.message : String(error)
+                  `Failed to get carousel media parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)
                   }`,
                   { itemIndex },
                 );
@@ -1979,8 +2048,7 @@ export class Instagram implements INodeType {
                 { itemIndex },
               );
             }
-            const pollIntervalMs = 1500;
-            const maxPollAttempts = 20;
+            // const pollIntervalMs = 1500;
             const childIds: string[] = [];
             const mediaUri = `https://${hostUrl}/${graphApiVersion}/${node}/media`;
             for (let i = 0; i < mediaItems.length; i++) {
@@ -2058,8 +2126,8 @@ export class Instagram implements INodeType {
                   hostUrl,
                   graphApiVersion,
                   itemIndex,
-                  pollIntervalMs,
-                  maxPollAttempts,
+                  pollIntervalMs: 5000,
+                  maxTotalTimeMs: 15 * 60 * 1000,
                 });
               } catch (err) {
                 throw new NodeOperationError(
@@ -2104,14 +2172,15 @@ export class Instagram implements INodeType {
                 { itemIndex },
               );
             }
+            let containerReadyResult;
             try {
-              await waitForContainerReady({
+              containerReadyResult = await waitForContainerReady({
                 creationId: carouselContainerId,
                 hostUrl,
                 graphApiVersion,
                 itemIndex,
-                pollIntervalMs,
-                maxPollAttempts,
+                pollIntervalMs: 5000,
+                maxTotalTimeMs: 15 * 60 * 1000,
               });
             } catch (err) {
               throw new NodeOperationError(
@@ -2142,7 +2211,13 @@ export class Instagram implements INodeType {
                 { itemIndex },
               );
             }
-            returnItems.push({ json: publishResponse, pairedItem: { item: itemIndex } });
+            returnItems.push({
+              json: {
+                ...publishResponse,
+                instagramPublishProgress: containerReadyResult,
+              },
+              pairedItem: { item: itemIndex },
+            });
             continue;
           } catch (error) {
             if (!this.continueOnFail()) {
@@ -2164,10 +2239,10 @@ export class Instagram implements INodeType {
             const errorItem =
               errorWithGraph.response !== undefined
                 ? {
-                    statusCode: errorWithGraph.statusCode,
-                    ...(errorWithGraph.response.body?.error ?? {}),
-                    headers: errorWithGraph.response.headers,
-                  }
+                  statusCode: errorWithGraph.statusCode,
+                  ...(errorWithGraph.response.body?.error ?? {}),
+                  headers: errorWithGraph.response.headers,
+                }
                 : (error as IDataObject);
             const contextMessage =
               error instanceof Error
@@ -2447,8 +2522,8 @@ export class Instagram implements INodeType {
 
                 const paging = response.paging as
                   | {
-                      cursors?: { after?: string };
-                    }
+                    cursors?: { after?: string };
+                  }
                   | undefined;
                 after = paging?.cursors?.after;
 
@@ -2865,8 +2940,8 @@ export class Instagram implements INodeType {
 
                 const paging = response.paging as
                   | {
-                      cursors?: { after?: string };
-                    }
+                    cursors?: { after?: string };
+                  }
                   | undefined;
                 after = paging?.cursors?.after;
 
@@ -3813,15 +3888,17 @@ export class Instagram implements INodeType {
         }
 
         // Wait until the container is ready before publishing
+        let containerReadyResult;
         try {
-          await waitForContainerReady({
+          containerReadyResult = await waitForContainerReady({
             creationId,
             hostUrl,
             graphApiVersion,
             itemIndex,
-            pollIntervalMs: handler.pollIntervalMs,
-            maxPollAttempts: handler.maxPollAttempts,
+            pollIntervalMs: 5000,
+            maxTotalTimeMs: 15 * 60 * 1000,
           });
+
         } catch (error) {
           if (error instanceof NodeOperationError) {
             throw toNodeError(this.getNode(), error);
@@ -3901,7 +3978,13 @@ export class Instagram implements INodeType {
                 note: 'Media was created but publishing failed',
               };
             }
-            returnItems.push({ json: { ...errorItem }, pairedItem: { item: itemIndex } });
+            returnItems.push({
+              json: {
+                ...errorItem,
+                instagramPublishProgress: containerReadyResult,
+              },
+              pairedItem: { item: itemIndex },
+            });
             publishFailedWithError = true;
             break;
           }
