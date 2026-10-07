@@ -7,12 +7,15 @@ const readmePath = process.argv[3]
   : resolve(__dirname, '..', 'README.md');
 
 if (!version || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) {
-  throw new Error('Usage: node scripts/update-readme-version-history.js <semantic-version> [readme-path]');
+  throw new Error(
+    'Usage: node scripts/update-readme-version-history.js <semantic-version> [readme-path]',
+  );
 }
 
 const readme = readFileSync(readmePath, 'utf8');
 const row = `| ${version} | See [CHANGELOG.md](CHANGELOG.md) for complete release notes. |`;
-const versionHistoryTable = /(## Version history\s*\n\s*\n\| Version \| Notes[^\n]*\n\|[- |]+\|\n)/;
+const versionHistoryTable =
+  /(## Version history\s*\n\s*\n\|\s*Version\s*\|\s*Notes[^\n]*\n\|(?:\s*:?-+:?\s*\|)+\n)/;
 
 if (readme.includes(row)) {
   process.exit(0);
