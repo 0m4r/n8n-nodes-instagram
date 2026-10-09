@@ -238,6 +238,7 @@ Each event is output as an item with `object`, `field`, `value`, `id`, `time` an
 
 | Version      | Notes                                                                                                                                                                                                                                                                                                                                |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 4.1.4 | See [CHANGELOG.md](CHANGELOG.md) for complete release notes. |
 | 4.1.3 | See [CHANGELOG.md](CHANGELOG.md) for complete release notes. |
 | 4.1.2 | See [CHANGELOG.md](CHANGELOG.md) for complete release notes. |
 | 4.1.1        | Automates release-note generation for [`CHANGELOG.md`](CHANGELOG.md) and the README version history.                                                                                                                                                                                                                                 |
