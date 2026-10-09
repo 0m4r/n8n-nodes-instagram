@@ -31,6 +31,6 @@ jobs:
         run: npm ci
 
       - name: Publish to npm
-        run: npm publish --provenance --access public
+        run: npm publish --provenance --access public --ignore-scripts
         # npm publish will now successfully trigger n8n-node prerelease
         # because the git history/tags are fully present.
