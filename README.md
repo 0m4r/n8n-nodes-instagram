@@ -238,6 +238,7 @@ Each event is output as an item with `object`, `field`, `value`, `id`, `time` an
 
 | Version      | Notes                                                                                                                                                                                                                                                                                                                                |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 4.1.10 | See [CHANGELOG.md](CHANGELOG.md) for complete release notes. |
 | 4.1.9 | See [CHANGELOG.md](CHANGELOG.md) for complete release notes. |
 | 4.1.8 | See [CHANGELOG.md](CHANGELOG.md) for complete release notes. |
 | 4.1.7 | See [CHANGELOG.md](CHANGELOG.md) for complete release notes. |
