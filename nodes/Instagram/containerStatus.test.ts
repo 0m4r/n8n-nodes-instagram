@@ -68,7 +68,9 @@ describe('container status interpretation', () => {
       status: 'ERROR',
     });
 
-    await expect(new Instagram().execute.call(context)).rejects.toThrow('Authoritative status: ERROR');
+    await expect(new Instagram().execute.call(context)).rejects.toThrow(
+      'Authoritative status: ERROR',
+    );
     expect(requests.some((request) => request.url.endsWith('/media_publish'))).toBe(false);
   });
 

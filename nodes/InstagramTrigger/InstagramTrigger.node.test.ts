@@ -222,12 +222,18 @@ describe('InstagramTrigger webhook', () => {
 
     await expect(
       trigger.webhook.call(
-        createWebhookContext({ body: { object: 'page' }, parameters: { skipSignatureVerification: true } }),
+        createWebhookContext({
+          body: { object: 'page' },
+          parameters: { skipSignatureVerification: true },
+        }),
       ),
     ).resolves.toEqual({ webhookResponse: 'OK' });
     await expect(
       trigger.webhook.call(
-        createWebhookContext({ body: { object: 'instagram' }, parameters: { skipSignatureVerification: true } }),
+        createWebhookContext({
+          body: { object: 'instagram' },
+          parameters: { skipSignatureVerification: true },
+        }),
       ),
     ).resolves.toEqual({ webhookResponse: 'OK' });
   });

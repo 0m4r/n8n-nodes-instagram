@@ -1,7 +1,11 @@
 import type { IExecuteFunctions } from 'n8n-workflow';
 import { describe, expect, it, vi } from 'vitest';
 import { imageResource } from './image';
-import { instagramResourceFields, instagramResourceHandlers, instagramResourceOptions } from './index';
+import {
+  instagramResourceFields,
+  instagramResourceHandlers,
+  instagramResourceOptions,
+} from './index';
 import { reelsResource } from './reels';
 import { storiesResource } from './stories';
 

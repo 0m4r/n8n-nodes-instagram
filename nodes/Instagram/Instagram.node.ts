@@ -1166,13 +1166,15 @@ export class Instagram implements INodeType {
                 : undefined;
 
             this.logger.error(
-              `Instagram: container ${creationId} failed with status ${authoritativeStatus} on poll ${pollCount}. ${statusError ? `Details: ${statusError}` : ''
+              `Instagram: container ${creationId} failed with status ${authoritativeStatus} on poll ${pollCount}. ${
+                statusError ? `Details: ${statusError}` : ''
               }`,
             );
 
             throw new NodeOperationError(
               this.getNode(),
-              `Instagram container failed. Container ID: ${creationId}. Authoritative status: ${authoritativeStatus}. Poll attempt: ${pollCount}. ${statusError ? `Error details: ${statusError}.` : ''
+              `Instagram container failed. Container ID: ${creationId}. Authoritative status: ${authoritativeStatus}. Poll attempt: ${pollCount}. ${
+                statusError ? `Error details: ${statusError}.` : ''
               }`,
               { itemIndex },
             );
@@ -1220,9 +1222,7 @@ export class Instagram implements INodeType {
           consecutiveErrors++;
 
           const errorMessage =
-            error instanceof Error
-              ? error.message.toLowerCase()
-              : String(error).toLowerCase();
+            error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
 
           const isFatalRequestError =
             errorMessage.includes('invalid') ||
@@ -1234,22 +1234,23 @@ export class Instagram implements INodeType {
 
           if (isFatalRequestError || consecutiveErrors >= maxConsecutiveErrors) {
             this.logger.error(
-              `Instagram: failed to poll container ${creationId}. Last status: ${lastStatusCode ?? 'unknown'
-              }. Error: ${error instanceof Error ? error.message : String(error)
-              }`,
+              `Instagram: failed to poll container ${creationId}. Last status: ${
+                lastStatusCode ?? 'unknown'
+              }. Error: ${error instanceof Error ? error.message : String(error)}`,
             );
 
             throw new NodeOperationError(
               this.getNode(),
-              `Failed to poll Instagram container status. Container ID: ${creationId}. Last status: ${lastStatusCode ?? 'unknown'
-              }. Last error: ${error instanceof Error ? error.message : String(error)
-              }`,
+              `Failed to poll Instagram container status. Container ID: ${creationId}. Last status: ${
+                lastStatusCode ?? 'unknown'
+              }. Last error: ${error instanceof Error ? error.message : String(error)}`,
               { itemIndex },
             );
           }
 
           this.logger.warn(
-            `Instagram: transient error while polling container ${creationId} (${consecutiveErrors}/${maxConsecutiveErrors}): ${error instanceof Error ? error.message : String(error)
+            `Instagram: transient error while polling container ${creationId} (${consecutiveErrors}/${maxConsecutiveErrors}): ${
+              error instanceof Error ? error.message : String(error)
             }`,
           );
 
@@ -1261,20 +1262,21 @@ export class Instagram implements INodeType {
       const elapsedSeconds = Math.round((Date.now() - startTime) / 1000);
 
       this.logger.error(
-        `Instagram: timed out waiting for container ${creationId} after ${elapsedSeconds}s. Last status: ${lastStatusCode ?? 'unknown'
+        `Instagram: timed out waiting for container ${creationId} after ${elapsedSeconds}s. Last status: ${
+          lastStatusCode ?? 'unknown'
         }.`,
       );
 
       throw new NodeOperationError(
         this.getNode(),
-        `Timed out waiting for Instagram container after ${maxTotalTimeMs / 1000
-        } seconds. Container ID: ${creationId}. Last status code: ${lastStatusCode ?? 'unknown'
-        }. Last status: ${lastStatusMessage ?? 'unknown'
-        }. Polls completed: ${pollCount}. Last polling error: ${lastError instanceof Error
-          ? lastError.message
-          : lastError
-            ? String(lastError)
-            : 'none'
+        `Timed out waiting for Instagram container after ${
+          maxTotalTimeMs / 1000
+        } seconds. Container ID: ${creationId}. Last status code: ${
+          lastStatusCode ?? 'unknown'
+        }. Last status: ${
+          lastStatusMessage ?? 'unknown'
+        }. Polls completed: ${pollCount}. Last polling error: ${
+          lastError instanceof Error ? lastError.message : lastError ? String(lastError) : 'none'
         }.`,
         { itemIndex },
       );
@@ -1800,19 +1802,15 @@ export class Instagram implements INodeType {
             } else {
               errorItem = error as IDataObject;
             }
+            this.logger.debug(
+              `Carousel publish failed. Status: ${errorWithGraph.statusCode ?? 'unknown'}, Response Body: ${JSON.stringify(errorWithGraph.response?.body || error)}`,
+            );
             returnItems.push({ json: { ...errorItem }, pairedItem: { item: itemIndex } });
             continue;
           }
         }
 
         if (resource === 'carousel' && operation === 'publish') {
-          const getCarouselErrorMessage = (error: unknown): string => {
-            type GraphError = { message?: string };
-            type Err = { response?: { body?: { error?: GraphError } }; message?: string };
-            const e = error as Err;
-            const apiMsg = e?.response?.body?.error?.message;
-            return typeof apiMsg === 'string' ? apiMsg : ((e?.message as string) ?? String(error));
-          };
           try {
             let node: string;
             let graphApiVersion: string;
@@ -2039,7 +2037,8 @@ export class Instagram implements INodeType {
                 }
                 throw new NodeOperationError(
                   this.getNode(),
-                  `Failed to get carousel media parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)
+                  `Failed to get carousel media parameter at item index ${itemIndex}: ${
+                    error instanceof Error ? error.message : String(error)
                   }`,
                   { itemIndex },
                 );
@@ -2062,79 +2061,80 @@ export class Instagram implements INodeType {
                 { itemIndex },
               );
             }
-            // const pollIntervalMs = 1500;
+
+            // Simplified media item processing
             const childIds: string[] = [];
             const mediaUri = `https://${hostUrl}/${graphApiVersion}/${node}/media`;
+
             for (let i = 0; i < mediaItems.length; i++) {
               const item = mediaItems[i];
               if (!item || typeof item !== 'object') {
                 throw new NodeOperationError(
                   this.getNode(),
-                  `Invalid carousel media item at index ${i} (item ${i + 1} of ${mediaItems.length}) at item index ${itemIndex}. Media item must be an object.`,
+                  `Invalid carousel media item at index ${i} at item index ${itemIndex}.`,
                   { itemIndex },
                 );
               }
 
-              const isVideo = item.mediaType === 'video';
-              const mediaLabel = `Carousel item ${i + 1} (${isVideo ? 'video' : 'image'})`;
-
+              // Validate media type
               if (!item.mediaType || typeof item.mediaType !== 'string') {
                 throw new NodeOperationError(
                   this.getNode(),
-                  `${mediaLabel}: Media type is required and must be either 'image' or 'video'.`,
+                  `Carousel item ${i + 1}: Media type is required and must be 'image' or 'video'.`,
                   { itemIndex },
                 );
               }
-
               if (item.mediaType !== 'image' && item.mediaType !== 'video') {
                 throw new NodeOperationError(
                   this.getNode(),
-                  `${mediaLabel}: Invalid media type '${item.mediaType}'. Media type must be either 'image' or 'video'.`,
+                  `Carousel item ${i + 1}: Invalid media type '${item.mediaType}'. Must be 'image' or 'video'.`,
                   { itemIndex },
                 );
               }
 
-              const url = isVideo ? (item.videoUrl ?? '').trim() : (item.imageUrl ?? '').trim();
+              // Get URL based on media type
+              const url =
+                item.mediaType === 'video'
+                  ? (item.videoUrl ?? '').trim()
+                  : (item.imageUrl ?? '').trim();
+
               if (!url || typeof url !== 'string') {
                 throw new NodeOperationError(
                   this.getNode(),
-                  `${mediaLabel}: ${isVideo ? 'Video URL' : 'Image URL'} is required and must be a non-empty string.`,
+                  `Carousel item ${i + 1}: ${item.mediaType === 'video' ? 'Video' : 'Image'} URL is required and must be a non-empty string.`,
                   { itemIndex },
                 );
               }
-              const childQs: IDataObject = isVideo
-                ? { media_type: 'VIDEO', video_url: url, is_carousel_item: true }
-                : { image_url: url, is_carousel_item: true };
-              const createChildOptions: IHttpRequestOptions = {
-                headers: { accept: 'application/json,text/*;q=0.99' },
-                method: 'POST',
-                url: mediaUri,
-                qs: childQs,
-                json: true,
-              };
-              let childResponse: IDataObject;
+
+              // Create child container
+              const childQs: IDataObject =
+                item.mediaType === 'video'
+                  ? { media_type: 'VIDEO', video_url: url, is_carousel_item: true }
+                  : { image_url: url, is_carousel_item: true };
+
               try {
-                childResponse = (await this.helpers.httpRequestWithAuthentication.call(
+                const childResponse = await this.helpers.httpRequestWithAuthentication.call(
                   this,
                   'instagramApi',
-                  createChildOptions,
-                )) as IDataObject;
-              } catch (err) {
-                throw new NodeOperationError(
-                  this.getNode(),
-                  `${mediaLabel}: container creation failed — ${getCarouselErrorMessage(err)}`,
-                  { itemIndex },
+                  {
+                    headers: { accept: 'application/json,text/*;q=0.99' },
+                    method: 'POST',
+                    url: mediaUri,
+                    qs: childQs,
+                    json: true,
+                  } as IHttpRequestOptions,
                 );
-              }
-              const childId = childResponse.id as string | undefined;
-              if (!childId || typeof childId !== 'string') {
-                throw new NodeOperationError(
-                  this.getNode(),
-                  `${mediaLabel}: Container creation did not return a valid ID. Response: ${JSON.stringify(childResponse)}`,
-                  { itemIndex },
-                );
-              }
-              try {
+
+                const childId = childResponse.id as string | undefined;
+                if (!childId || typeof childId !== 'string') {
+                  throw new NodeOperationError(
+                    this.getNode(),
+                    `Carousel item ${i + 1}: Container creation did not return a valid ID.`,
+                    { itemIndex },
+                  );
+                }
+
+                // Wait for container to be ready
                 await waitForContainerReady({
                   creationId: childId,
                   hostUrl,
@@ -2143,49 +2143,55 @@ export class Instagram implements INodeType {
                   pollIntervalMs: 60_000,
                   maxTotalTimeMs: 5 * 60 * 1000,
                 });
+
+                childIds.push(childId);
               } catch (err) {
                 throw new NodeOperationError(
                   this.getNode(),
-                  `${mediaLabel}: container did not become ready — ${getCarouselErrorMessage(err)}`,
+                  `Carousel item ${i + 1}: ${err instanceof Error ? err.message : String(err)}`,
                   { itemIndex },
                 );
               }
-              childIds.push(childId);
             }
+
+            // Create carousel container
             const carouselQs: IDataObject = {
               media_type: 'CAROUSEL',
               children: childIds.join(','),
               caption,
             };
-            const createCarouselOptions: IHttpRequestOptions = {
-              headers: { accept: 'application/json,text/*;q=0.99' },
-              method: 'POST',
-              url: mediaUri,
-              qs: carouselQs,
-              json: true,
-            };
+
             let carouselResponse: IDataObject;
             try {
-              carouselResponse = (await this.helpers.httpRequestWithAuthentication.call(
+              carouselResponse = await this.helpers.httpRequestWithAuthentication.call(
                 this,
                 'instagramApi',
-                createCarouselOptions,
-              )) as IDataObject;
+                {
+                  headers: { accept: 'application/json,text/*;q=0.99' },
+                  method: 'POST',
+                  url: mediaUri,
+                  qs: carouselQs,
+                  json: true,
+                } as IHttpRequestOptions,
+              );
             } catch (err) {
               throw new NodeOperationError(
                 this.getNode(),
-                `Carousel container (create): ${getCarouselErrorMessage(err)}`,
+                `Carousel container creation: ${err instanceof Error ? err.message : String(err)}`,
                 { itemIndex },
               );
             }
+
             const carouselContainerId = carouselResponse.id as string | undefined;
             if (!carouselContainerId || typeof carouselContainerId !== 'string') {
               throw new NodeOperationError(
                 this.getNode(),
-                `Carousel container creation did not return a valid ID. Response: ${JSON.stringify(carouselResponse)}`,
+                `Carousel container creation did not return a valid ID.`,
                 { itemIndex },
               );
             }
+
+            // Wait for carousel container to be ready
             let containerReadyResult;
             try {
               containerReadyResult = await waitForContainerReady({
@@ -2199,32 +2205,37 @@ export class Instagram implements INodeType {
             } catch (err) {
               throw new NodeOperationError(
                 this.getNode(),
-                `Carousel container (ready): ${getCarouselErrorMessage(err)}`,
+                `Carousel container ready: ${err instanceof Error ? err.message : String(err)}`,
                 { itemIndex },
               );
             }
+
+            // Publish carousel
             const publishUri = `https://${hostUrl}/${graphApiVersion}/${node}/media_publish`;
+            const publishQuery: IDataObject = { creation_id: carouselContainerId };
             const publishOptions: IHttpRequestOptions = {
               headers: { accept: 'application/json,text/*;q=0.99' },
               method: 'POST',
               url: publishUri,
-              qs: { creation_id: carouselContainerId },
+              qs: { ...publishQuery },
               json: true,
             };
+
             let publishResponse: IDataObject;
             try {
-              publishResponse = (await this.helpers.httpRequestWithAuthentication.call(
+              publishResponse = await this.helpers.httpRequestWithAuthentication.call(
                 this,
                 'instagramApi',
                 publishOptions,
-              )) as IDataObject;
+              );
             } catch (err) {
               throw new NodeOperationError(
                 this.getNode(),
-                `Carousel publish: ${getCarouselErrorMessage(err)}`,
+                `Carousel publish: ${err instanceof Error ? err.message : String(err)} (container ${carouselContainerId})`,
                 { itemIndex },
               );
             }
+
             returnItems.push({
               json: {
                 ...publishResponse,
@@ -2234,8 +2245,16 @@ export class Instagram implements INodeType {
             });
             continue;
           } catch (error) {
+            this.logger.error(
+              `Instagram carousel operation failed: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            );
+
             if (!this.continueOnFail()) {
-              throw new NodeApiError(this.getNode(), error as JsonObject);
+              throw error instanceof NodeApiError
+                ? error
+                : new NodeApiError(this.getNode(), error as JsonObject);
             }
             type GraphError = {
               message?: string;
@@ -2253,10 +2272,10 @@ export class Instagram implements INodeType {
             const errorItem =
               errorWithGraph.response !== undefined
                 ? {
-                  statusCode: errorWithGraph.statusCode,
-                  ...(errorWithGraph.response.body?.error ?? {}),
-                  headers: errorWithGraph.response.headers,
-                }
+                    statusCode: errorWithGraph.statusCode,
+                    ...(errorWithGraph.response.body?.error ?? {}),
+                    headers: errorWithGraph.response.headers,
+                  }
                 : (error as IDataObject);
             const contextMessage =
               error instanceof Error
@@ -2536,8 +2555,8 @@ export class Instagram implements INodeType {
 
                 const paging = response.paging as
                   | {
-                    cursors?: { after?: string };
-                  }
+                      cursors?: { after?: string };
+                    }
                   | undefined;
                 after = paging?.cursors?.after;
 
@@ -2954,8 +2973,8 @@ export class Instagram implements INodeType {
 
                 const paging = response.paging as
                   | {
-                    cursors?: { after?: string };
-                  }
+                      cursors?: { after?: string };
+                    }
                   | undefined;
                 after = paging?.cursors?.after;
 
@@ -3912,7 +3931,6 @@ export class Instagram implements INodeType {
             pollIntervalMs: 60_000,
             maxTotalTimeMs: 5 * 60 * 1000,
           });
-
         } catch (error) {
           if (error instanceof NodeOperationError) {
             throw toNodeError(this.getNode(), error);
@@ -3926,9 +3944,10 @@ export class Instagram implements INodeType {
 
         // Second request: Publish media
         const publishUri = `https://${hostUrl}/${graphApiVersion}/${node}/media_publish`;
-        const publishQs: IDataObject = {
-          creation_id: creationId,
-        };
+        // const publishQs: IDataObject = {
+        //   creation_id: creationId,
+        // };
+        const publishQs: IDataObject = { creation_id: creationId };
 
         const publishRequestOptions: IHttpRequestOptions = {
           headers: {

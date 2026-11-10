@@ -22,10 +22,7 @@ describe('Instagram credential definitions', () => {
     expect(apiEndpoint).toMatchObject({
       type: 'options',
       default: 'graph.instagram.com',
-      options: [
-        { value: 'graph.instagram.com' },
-        { value: 'graph.facebook.com' },
-      ],
+      options: [{ value: 'graph.instagram.com' }, { value: 'graph.facebook.com' }],
     });
     expect(credential.authenticate).toEqual({
       type: 'generic',

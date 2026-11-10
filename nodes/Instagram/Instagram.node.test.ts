@@ -28,7 +28,11 @@ const createExecuteContext = (
 
 describe('Instagram node request contracts', () => {
   it('maps account list-search results and honors the configured API host', async () => {
-    const request = vi.fn(async () => ({ id: 'account-1', name: 'Business', username: 'Business' }));
+    const request = vi.fn(async () => ({
+      id: 'account-1',
+      name: 'Business',
+      username: 'Business',
+    }));
     const context = {
       getCredentials: async () => ({ apiEndpoint: 'graph.instagram.com' }),
       helpers: { httpRequestWithAuthentication: request },
@@ -100,7 +104,12 @@ describe('Instagram node request contracts', () => {
 
   it('retrieves the Instagram account connected to a Facebook page', async () => {
     const { context, requests } = createExecuteContext(
-      { resource: 'page', operation: 'getInstagramAccount', graphApiVersion: 'v26.0', pageId: 'page-1' },
+      {
+        resource: 'page',
+        operation: 'getInstagramAccount',
+        graphApiVersion: 'v26.0',
+        pageId: 'page-1',
+      },
       { instagram_business_account: { id: 'ig-account-1' } },
     );
 

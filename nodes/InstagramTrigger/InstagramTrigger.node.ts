@@ -122,7 +122,7 @@ export class InstagramTrigger implements INodeType {
         type: 'boolean',
         default: false,
         description:
-          'Whether to accept webhook requests without validating Meta\'s X-Hub-Signature-256 signature',
+          "Whether to accept webhook requests without validating Meta's X-Hub-Signature-256 signature",
       },
     ],
   };
