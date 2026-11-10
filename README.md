@@ -47,28 +47,38 @@ The node exposes several resources:
 
 Create an **Instagram API** credential and provide an access token with permissions for the selected API endpoint.
 
-For the **Facebook Graph API** endpoint, use a Facebook Login token and grant at least:
+For **Instagram Login** (`graph.instagram.com`), use an Instagram User access token with:
+
+- `instagram_business_basic`
+- `instagram_business_content_publish`
+- `instagram_business_manage_comments`
+- `instagram_business_manage_messages`
+
+For **Facebook Login** (`graph.facebook.com`), use a Facebook User or Page access token with the permissions required by the operations you use. A typical setup includes:
 
 - `instagram_basic`
 - `pages_show_list`
 - `instagram_content_publish`
 - `pages_read_engagement`
 - `instagram_manage_comments`
-  Steps:
+- `instagram_manage_messages`
+- `pages_manage_metadata` (for webhook subscriptions)
+
+Steps:
 
 1. Make sure the Instagram account is a Business/Creator account connected to a Facebook Page.
 2. Use Meta's Graph Explorer or your own app to generate an access token that includes the scopes listed above.
 3. Convert it to a long-lived token and paste it into the credential's **Access Token** field.
 4. **Select API Endpoint**: Choose between:
-   - **Facebook Graph API** (`graph.facebook.com`) - Default option, recommended for most use cases
-   - **Instagram Graph API** (`graph.instagram.com`) - Use an Instagram Login token and permissions for Instagram Login.
+   - **Instagram Graph API** (`graph.instagram.com`) - Default option for Instagram Login.
+   - **Facebook Graph API** (`graph.facebook.com`) - Use a Facebook Login token; required for Page lookup and hashtag search.
 5. The built-in credential test uses v26.0 to confirm the token works.
 
-**Warning**: The Instagram Graph API endpoint has limited operation support. Page lookup and hashtag search require the Facebook Graph API endpoint. Changing the endpoint does not convert your token, change its login flow, or grant permissions. Use a token issued for the selected API. The Facebook Graph API endpoint is the recommended choice for the full set of node operations.
+Changing the endpoint does not convert your token, change its login flow, or grant permissions. Use a token issued for the selected API. Publishing, comments, private replies, and messaging are supported with Instagram Login; Page lookup and hashtag search require Facebook Login.
 
 ### Instagram Webhook Trigger credentials
 
-For the **Instagram Trigger** node you need a separate **Instagram Webhook** credential that stores your Meta **App Secret** (from App Dashboard → Settings → Basic). The App Secret is used to verify the `X-Hub-Signature-256` header on incoming webhook POSTs from Meta. The **Verify Token** is set in the node parameters (see below) and must match the value you enter in the Meta App Dashboard when configuring the webhook URL.
+For the **Instagram Trigger** node, create an **Instagram Webhook API** credential and enter the Meta **App Secret** (App Dashboard → Settings → Basic). Signature verification is enabled by default and checks `X-Hub-Signature-256` against the raw request body. The **Verify Token** is set in the node parameters and must match the value entered in the Meta App Dashboard for the callback URL. Disable signature verification only for a trusted test environment. Existing workflows may have the previous skip-verification setting saved; set it to false and update the old webhook credential with the App Secret.
 
 ## Instagram Webhook Trigger
 
@@ -79,7 +89,7 @@ The **Instagram Trigger** node listens for real-time webhook events from Meta an
 ### Setup
 
 1. **Create the credential**
-   Add an **Instagram Webhook** credential and enter your Meta **App Secret** (from your app’s Settings → Basic in the Meta App Dashboard).
+   Add an **Instagram Webhook API** credential and enter your Meta **App Secret** (from your app’s Settings → Basic in the Meta App Dashboard).
 
 2. **Add the trigger to your workflow**
    Add the **Instagram Trigger** node. Set **Verify Token** to any string you will use in the Meta Dashboard (e.g. a random secret). Copy the **Webhook URL** shown in the node (Production or Test URL).

@@ -27,20 +27,20 @@ export class InstagramApi implements ICredentialType {
       type: 'options',
       options: [
         {
-          name: 'Facebook Graph API',
-          value: 'graph.facebook.com',
-          description: 'Use graph.facebook.com endpoint (default)',
-        },
-        {
           name: 'Instagram Graph API',
           value: 'graph.instagram.com',
+          description: 'Use graph.instagram.com with an Instagram Login access token (default)',
+        },
+        {
+          name: 'Facebook Graph API',
+          value: 'graph.facebook.com',
           description:
-            'Limited support: Page lookup and hashtag search require Facebook Graph API. Use an Instagram Login access token.',
+            'Use graph.facebook.com with a Facebook Login access token. Page lookup and hashtag search require this endpoint.',
         },
       ],
-      default: 'graph.facebook.com',
+      default: 'graph.instagram.com',
       description:
-        'WARNING: Instagram Graph API does not support all node operations (including Page lookup and hashtag search). Changing this endpoint does not convert your access token or grant permissions; use a token issued for the selected API.',
+        'Use an access token issued for the selected login flow. Page lookup and hashtag search are available only with Facebook Login.',
     },
   ];
   authenticate: IAuthenticateGeneric = {
@@ -54,7 +54,7 @@ export class InstagramApi implements ICredentialType {
   test: ICredentialTestRequest = {
     request: {
       method: 'GET',
-      url: '=https://{{$credentials.apiEndpoint ?? "graph.facebook.com"}}/v26.0/me',
+      url: '=https://{{$credentials.apiEndpoint ?? "graph.instagram.com"}}/v26.0/me',
       qs: {
         fields: 'id',
       },

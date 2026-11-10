@@ -2,23 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { InstagramApi } from './InstagramApi.credentials';
 import { InstagramWebhookApi } from './InstagramWebhookApi.credentials';
 
-const credentialCases = [
-  {
-    credential: new InstagramApi(),
-    name: 'instagramApi',
-    displayName: 'Instagram (0m4r) API',
-  },
-  {
-    credential: new InstagramWebhookApi(),
-    name: 'instagramWebhookApi',
-    displayName: 'Instagram Webhook (0m4r) API',
-  },
-];
-
 describe('Instagram credential definitions', () => {
-  it.each(credentialCases)('defines the $name credential contract', ({ credential, name, displayName }) => {
-    expect(credential.name).toBe(name);
-    expect(credential.displayName).toBe(displayName);
+  it('defaults the API credential to Instagram Login and keeps Facebook Login selectable', () => {
+    const credential = new InstagramApi();
+
+    expect(credential.name).toBe('instagramApi');
+    expect(credential.displayName).toBe('Instagram (0m4r) API');
     expect(credential.icon).toEqual({ light: 'file:instagram.svg', dark: 'file:instagram.svg' });
 
     const accessToken = credential.properties.find((property) => property.name === 'accessToken');
@@ -32,10 +21,10 @@ describe('Instagram credential definitions', () => {
     });
     expect(apiEndpoint).toMatchObject({
       type: 'options',
-      default: 'graph.facebook.com',
+      default: 'graph.instagram.com',
       options: [
-        { value: 'graph.facebook.com' },
         { value: 'graph.instagram.com' },
+        { value: 'graph.facebook.com' },
       ],
     });
     expect(credential.authenticate).toEqual({
@@ -45,9 +34,23 @@ describe('Instagram credential definitions', () => {
     expect(credential.test).toEqual({
       request: {
         method: 'GET',
-        url: '=https://{{$credentials.apiEndpoint ?? "graph.facebook.com"}}/v26.0/me',
+        url: '=https://{{$credentials.apiEndpoint ?? "graph.instagram.com"}}/v26.0/me',
         qs: { fields: 'id' },
       },
     });
+  });
+
+  it('stores the App Secret for webhook signature verification', () => {
+    const credential = new InstagramWebhookApi();
+    expect(credential.name).toBe('instagramWebhookApi');
+    expect(credential.displayName).toBe('Instagram Webhook API');
+    expect(credential.properties).toContainEqual(
+      expect.objectContaining({
+        name: 'appSecret',
+        type: 'string',
+        required: true,
+        typeOptions: { password: true },
+      }),
+    );
   });
 });

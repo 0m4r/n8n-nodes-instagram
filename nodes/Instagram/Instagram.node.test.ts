@@ -5,6 +5,7 @@ import { Instagram } from './Instagram.node';
 const createExecuteContext = (
   parameters: Record<string, unknown>,
   response: Record<string, unknown>,
+  apiEndpoint = 'graph.facebook.com',
 ) => {
   const requests: IHttpRequestOptions[] = [];
   const request = vi.fn(async (_credential: string, options: IHttpRequestOptions) => {
@@ -14,7 +15,7 @@ const createExecuteContext = (
 
   const context = {
     continueOnFail: () => false,
-    getCredentials: async () => ({ apiEndpoint: 'graph.facebook.com' }),
+    getCredentials: async () => ({ apiEndpoint }),
     getInputData: () => [{ json: {} }],
     getNode: () => ({ name: 'Instagram' }),
     getNodeParameter: (name: string) => parameters[name],
@@ -78,6 +79,23 @@ describe('Instagram node request contracts', () => {
         body: { recipient: { id: 'recipient-1' }, message: { text: 'Hello from n8n' } },
       }),
     ]);
+  });
+
+  it('uses the selected Graph version and Instagram fields for Get Me', async () => {
+    const { context, requests } = createExecuteContext(
+      { resource: 'auth', operation: 'getMe', graphApiVersion: 'v25.0' },
+      { id: 'ig-user-1', username: 'creator' },
+      'graph.instagram.com',
+    );
+
+    await expect(new Instagram().execute.call(context)).resolves.toEqual([
+      [{ json: { id: 'ig-user-1', username: 'creator' }, pairedItem: { item: 0 } }],
+    ]);
+    expect(requests[0]).toMatchObject({
+      method: 'GET',
+      url: 'https://graph.instagram.com/v25.0/me',
+      qs: { fields: 'id,username,account_type,media_count' },
+    });
   });
 
   it('retrieves the Instagram account connected to a Facebook page', async () => {

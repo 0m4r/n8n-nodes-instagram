@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import type {
   IDataObject,
   IHookFunctions,
@@ -14,10 +15,10 @@ const INSTAGRAM_OBJECT = 'instagram';
 const INSTAGRAM_WEBHOOK_FIELDS = [
   { name: 'Comments', value: 'comments', description: 'When someone comments on media' },
   { name: 'Live Comments', value: 'live_comments', description: 'Comments during live streams' },
-  { name: 'Message Edit', value: 'message_edit', description: 'When a direct message is edited' },
+  { name: 'Message Echoes', value: 'message_echoes', description: 'Messages sent by your account' },
   {
-    name: 'Message Reactions',
-    value: 'message_reactions',
+    name: 'Messaging Reactions',
+    value: 'messaging_reactions',
     description: 'Reactions to direct messages',
   },
   { name: 'Messages', value: 'messages', description: 'When users send direct messages' },
@@ -29,8 +30,13 @@ const INSTAGRAM_WEBHOOK_FIELDS = [
   },
   {
     name: 'Messaging Referral',
-    value: 'messaging_referral',
+    value: 'messaging_referrals',
     description: 'Referral from messaging',
+  },
+  {
+    name: 'Messaging Opt-Ins',
+    value: 'messaging_optins',
+    description: 'When a user opts in to messaging',
   },
   { name: 'Messaging Seen', value: 'messaging_seen', description: 'When someone sees a message' },
   {
@@ -39,7 +45,11 @@ const INSTAGRAM_WEBHOOK_FIELDS = [
     description: 'Postback button clicks',
   },
   { name: 'Standby', value: 'standby', description: 'Standby events' },
-  { name: 'Story Insights', value: 'story_insights', description: 'Metrics when a story expires' },
+  {
+    name: 'Story Insights',
+    value: 'story_insights',
+    description: 'Metrics when a story expires (Facebook Login only)',
+  },
 ] as const;
 
 export class InstagramTrigger implements INodeType {
@@ -64,6 +74,7 @@ export class InstagramTrigger implements INodeType {
       {
         name: 'instagramWebhookApi',
         required: true,
+        testedBy: 'instagramTrigger',
         displayOptions: { show: { skipSignatureVerification: [false] } },
       },
     ],
@@ -109,9 +120,9 @@ export class InstagramTrigger implements INodeType {
         displayName: 'Skip Signature Verification',
         name: 'skipSignatureVerification',
         type: 'boolean',
-        default: true,
+        default: false,
         description:
-          'Whether to skip X-Hub-Signature-256 verification. Enabled by default because n8n may not provide raw body for signature verification; disable only if you have confirmed verification works in your setup.',
+          'Whether to accept webhook requests without validating Meta\'s X-Hub-Signature-256 signature',
       },
     ],
   };
@@ -157,19 +168,45 @@ export class InstagramTrigger implements INodeType {
     }
 
     // POST: event notification
-    const bodyData = this.getBodyData();
     const skipVerification = this.getNodeParameter('skipSignatureVerification') as boolean;
 
     if (!skipVerification) {
-      return {
-        webhookResponse: {
-          error:
-            'X-Hub-Signature-256 verification is not supported in this environment. Set "Skip Signature Verification" to true to accept events without validating the signature.',
-        },
-        noWebhookResponse: false,
+      const request = this.getRequestObject();
+      await request.readRawBody();
+      const rawBody = request.rawBody;
+      const signatureHeader = request.headers['x-hub-signature-256'];
+      const signature = typeof signatureHeader === 'string' ? signatureHeader : '';
+      let appSecret = '';
+
+      try {
+        const credentials = await this.getCredentials('instagramWebhookApi');
+        appSecret = typeof credentials.appSecret === 'string' ? credentials.appSecret : '';
+      } catch {
+        appSecret = '';
+      }
+
+      const rejectRequest = (statusCode: number, message: string) => {
+        this.getResponseObject().status(statusCode).send(message);
+        return { noWebhookResponse: true };
       };
+
+      if (!appSecret || !Buffer.isBuffer(rawBody)) {
+        return rejectRequest(500, 'Webhook signature verification is unavailable');
+      }
+
+      const digest = signature.startsWith('sha256=') ? signature.slice(7) : '';
+      if (!/^[\da-f]{64}$/i.test(digest)) {
+        return rejectRequest(401, 'Forbidden');
+      }
+
+      const expectedDigest = createHmac('sha256', appSecret).update(rawBody).digest();
+      const receivedDigest = Buffer.from(digest, 'hex');
+      if (!timingSafeEqual(expectedDigest, receivedDigest)) {
+        return rejectRequest(401, 'Forbidden');
+      }
     }
 
+    const bodyData = this.getBodyData();
     const payload = typeof bodyData === 'object' && bodyData !== null ? bodyData : {};
     const objectType = payload.object as string;
     const entries = Array.isArray(payload.entry) ? payload.entry : [];
@@ -186,6 +223,22 @@ export class InstagramTrigger implements INodeType {
       const entryObj = entry as IDataObject;
       const id = entryObj.id;
       const time = entryObj.time;
+
+      // Instagram Login sends some change notifications directly on entry.
+      if (typeof entryObj.field === 'string' && 'value' in entryObj) {
+        const field = entryObj.field;
+        if (!filterByEvents || eventsToInclude.includes(field)) {
+          items.push({
+            json: {
+              object: objectType,
+              field,
+              value: entryObj.value,
+              id,
+              time,
+            },
+          });
+        }
+      }
 
       // Format 1: Graph API webhooks – entry[].changes[] (comments, mentions, story_insights, etc.)
       const changesRaw = entryObj.changes;
@@ -211,11 +264,41 @@ export class InstagramTrigger implements INodeType {
         ? (messagingRaw as IDataObject[])
         : [];
       for (const msg of messaging) {
-        if (filterByEvents && !eventsToInclude.includes('messages')) continue;
+        const messageData = msg.message as IDataObject | undefined;
+        const field = msg.reaction
+          ? 'messaging_reactions'
+          : msg.read
+            ? 'messaging_seen'
+            : msg.postback
+              ? 'messaging_postbacks'
+              : msg.referral
+                ? 'messaging_referrals'
+                : msg.optin
+                  ? 'messaging_optins'
+                  : msg.pass_thread_control || msg.take_thread_control
+                    ? 'messaging_handover'
+                    : msg.standby
+                      ? 'standby'
+                      : messageData?.is_echo
+                        ? 'message_echoes'
+                        : 'messages';
+        const legacyField =
+          field === 'messaging_reactions'
+            ? 'message_reactions'
+            : field === 'messaging_referrals'
+              ? 'messaging_referral'
+              : undefined;
+        if (
+          filterByEvents &&
+          !eventsToInclude.includes(field) &&
+          !(legacyField && eventsToInclude.includes(legacyField))
+        ) {
+          continue;
+        }
         items.push({
           json: {
             object: objectType,
-            field: 'messages',
+            field,
             id,
             time,
             sender: (msg as IDataObject).sender,

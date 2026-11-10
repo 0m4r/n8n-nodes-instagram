@@ -40,7 +40,7 @@ export class Instagram implements INodeType {
       },
     ],
     requestDefaults: {
-      baseURL: 'https://graph.facebook.com/',
+      baseURL: 'https://graph.instagram.com/',
       headers: {
         accept: 'application/json,text/*;q=0.99',
       },
@@ -966,7 +966,7 @@ export class Instagram implements INodeType {
 
         try {
           // Get API endpoint from credentials
-          let hostUrl = 'graph.facebook.com';
+          let hostUrl = 'graph.instagram.com';
           try {
             const credentials = await this.getCredentials('instagramApi');
             if (credentials?.apiEndpoint && typeof credentials.apiEndpoint === 'string') {
@@ -976,7 +976,7 @@ export class Instagram implements INodeType {
             // Use default if credentials can't be retrieved
           }
 
-          // Call /me endpoint to get user info (uses v26.0)
+          // Use fields supported by the selected login flow.
           const url = `https://${hostUrl}/v26.0/me`;
           const requestOptions: IHttpRequestOptions = {
             headers: {
@@ -985,7 +985,7 @@ export class Instagram implements INodeType {
             method: 'GET',
             url,
             qs: {
-              fields: 'id,name,username',
+              fields: hostUrl === 'graph.instagram.com' ? 'id,username' : 'id,name,username',
             },
             json: true,
           };
@@ -1023,7 +1023,7 @@ export class Instagram implements INodeType {
     const returnItems: INodeExecutionData[] = [];
 
     // Get API endpoint from credentials
-    let hostUrl = 'graph.facebook.com';
+    let hostUrl = 'graph.instagram.com';
     try {
       const credentials = await this.getCredentials('instagramApi');
       if (credentials?.apiEndpoint && typeof credentials.apiEndpoint === 'string') {
@@ -1049,8 +1049,8 @@ export class Instagram implements INodeType {
       hostUrl,
       graphApiVersion,
       itemIndex,
-      pollIntervalMs = 5000,
-      maxTotalTimeMs = 15 * 60 * 1000,
+      pollIntervalMs = 60_000,
+      maxTotalTimeMs = 5 * 60 * 1000,
     }: {
       creationId: string;
       hostUrl: string;
@@ -1709,14 +1709,28 @@ export class Instagram implements INodeType {
             }
 
             if (operation === 'getMe') {
-              // Use v26.0 for /me endpoint
-              const url = `https://${hostUrl}/v26.0/me`;
+              const graphApiVersion = this.getNodeParameter('graphApiVersion', itemIndex) as string;
+              if (!/^v\d+\.\d+$/.test(graphApiVersion)) {
+                throw new NodeOperationError(
+                  this.getNode(),
+                  `Invalid Graph API version: ${graphApiVersion}`,
+                  { itemIndex },
+                );
+              }
+
+              const url = `https://${hostUrl}/${graphApiVersion}/me`;
               const requestOptions: IHttpRequestOptions = {
                 headers: {
                   accept: 'application/json,text/*;q=0.99',
                 },
                 method: 'GET',
                 url,
+                qs: {
+                  fields:
+                    hostUrl === 'graph.instagram.com'
+                      ? 'id,username,account_type,media_count'
+                      : 'id,name',
+                },
                 json: true,
               };
 
@@ -2126,8 +2140,8 @@ export class Instagram implements INodeType {
                   hostUrl,
                   graphApiVersion,
                   itemIndex,
-                  pollIntervalMs: 5000,
-                  maxTotalTimeMs: 15 * 60 * 1000,
+                  pollIntervalMs: 60_000,
+                  maxTotalTimeMs: 5 * 60 * 1000,
                 });
               } catch (err) {
                 throw new NodeOperationError(
@@ -2179,8 +2193,8 @@ export class Instagram implements INodeType {
                 hostUrl,
                 graphApiVersion,
                 itemIndex,
-                pollIntervalMs: 5000,
-                maxTotalTimeMs: 15 * 60 * 1000,
+                pollIntervalMs: 60_000,
+                maxTotalTimeMs: 5 * 60 * 1000,
               });
             } catch (err) {
               throw new NodeOperationError(
@@ -3895,8 +3909,8 @@ export class Instagram implements INodeType {
             hostUrl,
             graphApiVersion,
             itemIndex,
-            pollIntervalMs: 5000,
-            maxTotalTimeMs: 15 * 60 * 1000,
+            pollIntervalMs: 60_000,
+            maxTotalTimeMs: 5 * 60 * 1000,
           });
 
         } catch (error) {
