@@ -44,21 +44,30 @@ jobs:
         with:
           path: ~/.npm
           # Include npm version in cache key to bust cache when npm version changes
-          key: ${{ runner.os }}-npm-10.9.10-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ runner.os }}-npm-10.9.10-${{ hashFiles('**/package.json') }}
           restore-keys: |
             ${{ runner.os }}-npm-10.9.10-
+
+      # Regenerate lockfile in Linux environment to capture platform-specific dependencies
+      - name: Regenerate lockfile for Linux
+        run: |
+          rm -f package-lock.json
+          npm install --package-lock-only
 
       - name: Install dependencies
         run: |
           # Use a single deterministic install; npm ci is preferred when package-lock.json exists
           npm ci
+          
       - name: Test
         # A non-zero npm test exit code fails this required workflow step.
         run: npm test
+        
       - name: Typecheck (bounded)
         # Use timeout to prevent infinite hang; adjust seconds as needed
         run: |
           npm run typecheck
+          
       - name: Lint (bounded)
         # Use timeout to prevent infinite hang; adjust seconds as needed
         run: |
