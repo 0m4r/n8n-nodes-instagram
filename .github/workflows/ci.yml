@@ -48,16 +48,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-npm-10.9.10-
 
-      # Regenerate lockfile in Linux environment to capture platform-specific dependencies
-      - name: Regenerate lockfile for Linux
-        run: |
-          rm -f package-lock.json
-          npm install --package-lock-only
-
+      # Use npm install instead of npm ci to handle platform-specific dependency resolution
+      # npm install is more lenient and will resolve version conflicts automatically
       - name: Install dependencies
-        run: |
-          # Use a single deterministic install; npm ci is preferred when package-lock.json exists
-          npm ci
+        run: npm install
           
       - name: Test
         # A non-zero npm test exit code fails this required workflow step.
