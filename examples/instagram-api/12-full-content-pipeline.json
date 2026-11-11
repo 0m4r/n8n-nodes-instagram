@@ -1,0 +1,121 @@
+{
+  "name": "12 Full Instagram Content Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "content-pipeline",
+        "responseMode": "onReceived",
+        "responseData": "={{ $json }}"
+      },
+      "id": "webhook-1",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": "1.1",
+      "position": [
+        240,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "auth",
+        "operation": "getMe",
+        "graphApiVersion": "v26.0"
+      },
+      "id": "instagram-1",
+      "name": "Verify Token (/me)",
+      "type": "@0m4r/n8n-nodes-instagram.instagram",
+      "typeVersion": 1,
+      "position": [
+        460,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "publish",
+        "node": {
+          "mode": "id",
+          "id": "={{ $json.id }}"
+        },
+        "graphApiVersion": "v26.0",
+        "imageUrl": "={{ $json.imageUrl }}",
+        "caption": "={{ $json.caption || 'New content via n8n pipeline!' }}",
+        "additionalFields": {
+          "altText": "={{ $json.altText || '' }}",
+          "locationId": "",
+          "productTags": {
+            "tag": []
+          },
+          "trialReelGraduationStrategy": "MANUAL",
+          "userTags": {
+            "tag": []
+          }
+        }
+      },
+      "id": "instagram-2",
+      "name": "Publish Image",
+      "type": "@0m4r/n8n-nodes-instagram.instagram",
+      "typeVersion": 1,
+      "position": [
+        680,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "responseBody": "={{ JSON.stringify({ success: true, mediaId: $json.id, permalink: $json.permalink }) }}",
+        "responseCode": 200
+      },
+      "id": "respond-1",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": "1.1",
+      "position": [
+        900,
+        200
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Verify Token (/me)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Token (/me)": {
+      "main": [
+        [
+          {
+            "node": "Publish Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish Image": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "workflow-content-pipeline",
+  "tags": []
+}

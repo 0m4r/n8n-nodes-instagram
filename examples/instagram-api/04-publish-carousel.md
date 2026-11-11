@@ -17,6 +17,14 @@ This workflow publishes a carousel (album) post with up to 10 images and/or vide
 - Per-item error reporting (if any child container fails, the error identifies which item)
 - Optional **alt text**, **location ID**, **product tags**, and **user tags**
 
+## Trigger
+
+This workflow uses a **Cron trigger** (every 30 days).
+
+**Why cron?** Publishing a carousel is an outbound action you initiate on a schedule. Instagram does not emit a real-time event when you want to publish content, so there is no webhook to listen to. A cron trigger is the right choice for scheduled publishing.
+
+**When to use Instagram Trigger instead:** Never for publishing. The Instagram Trigger is for inbound events (comments, messages, mentions) pushed by Meta, not for outbound publishing.
+
 ## Prerequisites
 
 - An **Instagram API** credential (`instagramApi`) configured with a long-lived access token.

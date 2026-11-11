@@ -16,6 +16,40 @@ This workflow publishes a Story to Instagram when an HTTP webhook is called. It'
 - Dynamic inputs from webhook request body (`videoUrl`, `caption`)
 - HTTP response with the published story ID
 
+## Trigger
+
+This workflow uses a **Generic Webhook trigger** (`n8n-nodes-base.webhook`).
+
+**Why a generic webhook?** Publishing a Story is an outbound action initiated by an external system (CMS, mobile app, or another n8n workflow). The webhook lets that system tell n8n to publish on Instagram. This is **not** an inbound Instagram event, so the Instagram Trigger does not apply here.
+
+**When to use Instagram Trigger instead:** Never for outbound publishing. The Instagram Trigger is for reacting to events Meta pushes to you (comments, messages, mentions).
+
+## Calling the webhook endpoint
+
+After importing and activating the workflow, copy the webhook URL from the **Webhook Trigger** node.
+
+**curl:**
+```bash
+curl -X POST "https://your-n8n-instance.com/webhook/publish-story" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "videoUrl": "https://example.com/videos/story.mp4",
+    "caption": "Check out my story!"
+  }'
+```
+
+**HTTP Request (n8n):**
+```json
+{
+  "url": "={{ $json.webhookUrl }}",
+  "method": "POST",
+  "json": {
+    "videoUrl": "https://example.com/videos/story.mp4",
+    "caption": "Check out my story!"
+  }
+}
+```
+
 ## Prerequisites
 
 - An **Instagram API** credential (`instagramApi`) configured with a long-lived access token.

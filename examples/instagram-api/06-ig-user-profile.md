@@ -16,6 +16,14 @@ This workflow runs every 12 hours to fetch an Instagram Business/Creator account
 - Paginated media listing with configurable limit
 - Read-only operations — no publishing or moderation
 
+## Trigger
+
+This workflow uses a **Cron trigger** (every 12 hours).
+
+**Why cron?** Reading profile data is a periodic read-only sync. Instagram does not emit real-time webhook events when profile information changes, so there is nothing to listen to. A cron trigger is the right choice for scheduled data refresh.
+
+**When to use Instagram Trigger instead:** Not applicable. Profile reads are outbound queries, not inbound events.
+
 ## Prerequisites
 
 - An **Instagram API** credential (`instagramApi`) configured with a long-lived access token.

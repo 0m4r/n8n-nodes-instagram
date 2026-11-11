@@ -1,0 +1,153 @@
+{
+  "name": "11 Instagram Trigger & Auto-Reply",
+  "nodes": [
+    {
+      "parameters": {
+        "verifyToken": "YOUR_VERIFY_TOKEN",
+        "eventsToInclude": [
+          "comments",
+          "messages"
+        ],
+        "skipSignatureVerification": false
+      },
+      "id": "instagramtrigger-1",
+      "name": "Instagram Trigger",
+      "type": "@0m4r/n8n-nodes-instagram.instagramTrigger",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.field }}",
+              "operation": "equals",
+              "value2": "comments"
+            }
+          ]
+        }
+      },
+      "id": "if-1",
+      "name": "Is Comment?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.field }}",
+              "operation": "equals",
+              "value2": "messages"
+            }
+          ]
+        }
+      },
+      "id": "if-2",
+      "name": "Is Message?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        460,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "comments",
+        "operation": "sendPrivateReply",
+        "node": {
+          "mode": "id",
+          "id": "YOUR_IG_USER_ID"
+        },
+        "commentId": "={{ $json.value.comment_id }}",
+        "privateReplyText": "Thanks for commenting! We'll get back to you soon.",
+        "graphApiVersion": "v26.0"
+      },
+      "id": "instagram-1",
+      "name": "Reply to Comment",
+      "type": "@0m4r/n8n-nodes-instagram.instagram",
+      "typeVersion": 1,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "messaging",
+        "operation": "sendMessage",
+        "node": {
+          "mode": "id",
+          "id": "YOUR_IG_USER_ID"
+        },
+        "recipientId": "={{ $json.sender.id }}",
+        "messageText": "Thanks for your message! We'll respond shortly.",
+        "graphApiVersion": "v26.0"
+      },
+      "id": "instagram-2",
+      "name": "Reply to Message",
+      "type": "@0m4r/n8n-nodes-instagram.instagram",
+      "typeVersion": 1,
+      "position": [
+        680,
+        500
+      ]
+    }
+  ],
+  "connections": {
+    "Instagram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Is Comment?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Is Message?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Comment?": {
+      "main": [
+        [
+          {
+            "node": "Reply to Comment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Is Message?": {
+      "main": [
+        [
+          {
+            "node": "Reply to Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "workflow-trigger-and-reply",
+  "tags": []
+}

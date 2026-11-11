@@ -79,6 +79,59 @@ Use this endpoint for **Facebook Login–gated** workflows that Instagram Login 
 
 Most workflows use the **Instagram API** credential. Workflow 11 additionally needs the **Instagram Webhook API** credential (Meta App Secret) for signature verification.
 
+## Trigger Types: Generic Webhook vs Instagram Trigger
+
+The examples use two different trigger mechanisms. They are **not interchangeable** — they serve opposite directions of communication.
+
+| | Generic Webhook (`n8n-nodes-base.webhook`) | Instagram Trigger (`instagramTrigger`) |
+|---|---|---|
+| **Who initiates** | An external system (CMS, mobile app, another n8n workflow) sends an HTTP request **to n8n** | Meta/Instagram pushes an event **to n8n** |
+| **Direction** | **Outbound**: n8n → Instagram (publish, send DM, etc.) | **Inbound**: Instagram → n8n (comment, message, mention, etc.) |
+| **Typical use** | On-demand or external-system-triggered actions | Real-time reaction to Instagram activity |
+| **Auth** | None by default | Meta signature verification (`X-Hub-Signature-256`) + Verify Token challenge |
+| **Credential** | None | **Instagram Webhook API** (Meta App Secret) |
+
+### Use a Generic Webhook when…
+
+An external system needs to tell n8n to do something with Instagram:
+
+- Publishing an image, Reel, Story, or carousel on request from a CMS or mobile app
+- Sending a direct message triggered by an external order confirmation or support ticket
+- Any workflow where n8n initiates an outbound action to Instagram
+
+Examples using a generic webhook: **03** (Publish Story), **08** (Send Direct Message), **12** (Full Content Pipeline).
+
+### Use the Instagram Trigger when…
+
+Instagram itself pushes a real-time event to n8n and you want to react:
+
+- Auto-replying to comments as they come in
+- Auto-replying to direct messages
+- Monitoring mentions, story insights, or live comments
+
+Example using the Instagram Trigger: **11** (Trigger & Auto-Reply).
+
+### Example mapping
+
+| # | Example | Trigger | Why |
+|---|---------|---------|-----|
+| 01 | Publish Image | Cron | Scheduled publishing |
+| 02 | Publish Reel | Cron | Scheduled publishing |
+| 03 | Publish Story | Generic Webhook | External system initiates publishing |
+| 04 | Publish Carousel | Cron | Scheduled publishing |
+| 05 | Comment Moderation | Cron | Batch moderation (could use Instagram Trigger for real-time) |
+| 06 | IG User Profile | Cron | Read-only periodic sync |
+| 07 | Hashtag Search | Cron | Periodic research |
+| 08 | Send Direct Message | Generic Webhook | External system initiates a DM |
+| 09 | Token Operations | Cron | Scheduled token maintenance |
+| 10 | Page → IG Account | Cron | Periodic lookup |
+| 11 | Trigger & Auto-Reply | **Instagram Trigger** | Real-time inbound events from Meta |
+| 12 | Content Pipeline | Generic Webhook | External system initiates publishing |
+
+> **Key takeaway:** If your workflow starts because *you* (or an external system) want to do something *to* Instagram, use a generic webhook (or cron). If your workflow starts because *Instagram* pushed an event to you, use the Instagram Trigger.
+
+For curl examples and n8n HTTP Request payloads for each webhook example, see the individual `.md` files for examples 03, 08, and 12.
+
 ## How to Use These Examples
 
 1. **Install the node package** in your n8n instance following the [installation guide](https://docs.n8n.io/integrations/community-nodes/installation/).

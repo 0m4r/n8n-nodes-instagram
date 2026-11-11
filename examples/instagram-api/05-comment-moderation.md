@@ -18,6 +18,14 @@ This workflow runs every 6 hours to fetch comments on a specific media item, hid
 - Sending a private reply to a commenter (subject to Meta's 7-day messaging window)
 - Chaining multiple comment operations on the same data
 
+## Trigger
+
+This workflow uses a **Cron trigger** (every 6 hours).
+
+**Why cron?** It polls for comments on a schedule and processes them in batches. This works well for routine moderation when real-time response is not critical.
+
+**Consider Instagram Trigger for real-time response:** If you want to reply to comments as soon as they are posted (rather than waiting up to 6 hours), replace the Cron trigger with the **Instagram Trigger** (event: `comments`). See `11-trigger-and-reply.md` for an example of the Instagram Trigger in action with auto-reply.
+
 ## Prerequisites
 
 - An **Instagram API** credential (`instagramApi`) configured with a long-lived access token.

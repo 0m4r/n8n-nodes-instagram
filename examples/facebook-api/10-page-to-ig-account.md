@@ -14,6 +14,14 @@ This workflow runs daily to look up the Instagram Business/Creator account conne
 - Retrieves the `instagram_business_account` object for a Facebook Page
 - Returns the Instagram User ID, which can be fed into other resources (Image/Reels/Stories/Carousel/IG User)
 
+## Trigger
+
+This workflow uses a **Cron trigger** (every 24 hours).
+
+**Why cron?** Looking up the Instagram account connected to a Facebook Page is a periodic administrative task. There is no real-time webhook event for Page-to-Instagram-Account mapping changes, so a cron trigger is the right choice.
+
+**When to use Instagram Trigger instead:** Not applicable. This is an outbound lookup, not an inbound event.
+
 ## Prerequisites
 
 - An **Instagram API** credential (`instagramApi`) configured with a long-lived access token.

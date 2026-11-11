@@ -16,6 +16,14 @@ This workflow runs daily to search for a hashtag by name, then fetches the top m
 - Top media and recent media pagination with configurable limit
 - Uses the hashtag ID from search output as input to media lookup
 
+## Trigger
+
+This workflow uses a **Cron trigger** (every 24 hours).
+
+**Why cron?** Hashtag search is a periodic research/monitoring task. Instagram does not emit real-time webhook events for hashtag activity in this context, so a cron trigger is the right choice for scheduled hashtag checks.
+
+**When to use Instagram Trigger instead:** Not applicable. Hashtag search is an outbound query, not an inbound event.
+
 ## Prerequisites
 
 - An **Instagram API** credential (`instagramApi`) configured with a long-lived access token.

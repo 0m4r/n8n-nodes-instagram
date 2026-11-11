@@ -16,6 +16,14 @@ This workflow publishes a single image post to Instagram on a daily schedule. It
 - Optional **location ID** tagging
 - Optional **product tags** and **user tags**
 
+## Trigger
+
+This workflow uses a **Cron trigger** (every 24 hours).
+
+**Why cron?** Publishing an image is an outbound action you initiate on a schedule. Instagram does not emit a real-time event when you want to publish content, so there is no webhook to listen to. A cron trigger is the right choice for scheduled publishing.
+
+**When to use Instagram Trigger instead:** Never for publishing. The Instagram Trigger is for inbound events (comments, messages, mentions) pushed by Meta, not for outbound publishing.
+
 ## Prerequisites
 
 - An **Instagram API** credential (`instagramApi`) configured with a long-lived access token.
