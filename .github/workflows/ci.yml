@@ -43,9 +43,10 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          # Include npm version in cache key to bust cache when npm version changes
+          key: ${{ runner.os }}-npm-11.16.0-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-npm-
+            ${{ runner.os }}-npm-11.16.0-
 
       - name: Install dependencies
         run: |
