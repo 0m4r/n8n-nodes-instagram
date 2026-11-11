@@ -4,15 +4,21 @@ permissions:
   contents: read
 
 on:
+  workflow_dispatch:  # Manual trigger
   pull_request:
   push:
     branches-ignore:
       - main
 
+# Cancel in-progress runs when a new run is triggered on the same branch/PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 720
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
