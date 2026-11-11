@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     # Increase job timeout (minutes). Repo/org settings may cap this — check Settings → Actions → General → Workflow timeout.
     timeout-minutes: 720
 
