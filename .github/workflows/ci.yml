@@ -11,7 +11,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Increase job timeout (minutes). Repo/org settings may cap this — check Settings → Actions → General → Workflow timeout.
     timeout-minutes: 720
 
     steps:
@@ -22,47 +21,19 @@ jobs:
         with:
           node-version-file: ".nvmrc"
           registry-url: "https://registry.npmjs.org"
-          package-manager-cache: false
-
-      # Pin npm version to match local environment (npm 11.16.0)
-      - name: Install npm 11.16.0
-        run: npm install -g npm@11.16.0
-
-      # Verify npm version alignment
-      - name: Verify npm version
-        run: |
-          EXPECTED_NPM="11.16.0"
-          ACTUAL_NPM=$(npm --version)
-          if [ "$ACTUAL_NPM" != "$EXPECTED_NPM" ]; then
-            echo "❌ npm version mismatch: expected $EXPECTED_NPM, got $ACTUAL_NPM"
-            exit 1
-          fi
-          echo "✅ npm version aligned: $ACTUAL_NPM"
-
-      - name: Cache npm
-        uses: actions/cache@v6
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
+          cache: 'npm'
 
       - name: Install dependencies
-        run: |
-          # Use a single deterministic install; npm ci is preferred when package-lock.json exists
-          npm ci
+        run: npm install
+          
       - name: Test
-        # A non-zero npm test exit code fails this required workflow step.
         run: npm test
-      - name: Typecheck (bounded)
-        # Use timeout to prevent infinite hang; adjust seconds as needed
-        run: |
-          npm run typecheck
-      - name: Lint (bounded)
-        # Use timeout to prevent infinite hang; adjust seconds as needed
-        run: |
-          npm run lint
+        
+      - name: Typecheck
+        run: npm run typecheck
+          
+      - name: Lint
+        run: npm run lint
 
-      - name: Run build (bounded)
-        run: |
-          npm run build
+      - name: Build
+        run: npm run build
