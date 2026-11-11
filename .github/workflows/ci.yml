@@ -1,4 +1,5 @@
 name: CI
+
 permissions:
   contents: read
 
@@ -11,59 +12,20 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Increase job timeout (minutes). Repo/org settings may cap this — check Settings → Actions → General → Workflow timeout.
-    timeout-minutes: 720
+    timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.ref }}
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v4
         with:
           node-version-file: ".nvmrc"
           registry-url: "https://registry.npmjs.org"
-          package-manager-cache: false
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build package
-        run: npm run build --if-present
-
-      - name: Test package
-        run: npm test
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.ref }}
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: ".nvmrc"
-          registry-url: "https://registry.npmjs.org"
-          package-manager-cache: false
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build package
-        run: npm run build --if-present
-
-      - name: Test package
-        run: npm test
-      - uses: actions/checkout@v7
-
-      - name: Use Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: ".nvmrc"
-          registry-url: "https://registry.npmjs.org"
-          package-manager-cache: false
-
-      - name: Cache npm
-        uses: actions/cache@v6
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
         with:
           path: ~/.npm
           key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
@@ -71,21 +33,16 @@ jobs:
             ${{ runner.os }}-npm-
 
       - name: Install dependencies
-        run: |
-          # Use a single deterministic install; npm ci is preferred when package-lock.json exists
-          npm ci
-      - name: Test
-        # A non-zero npm test exit code fails this required workflow step.
-        run: npm test
-      - name: Typecheck (bounded)
-        # Use timeout to prevent infinite hang; adjust seconds as needed
-        run: |
-          npm run typecheck
-      - name: Lint (bounded)
-        # Use timeout to prevent infinite hang; adjust seconds as needed
-        run: |
-          npm run lint
+        run: npm ci
 
-      - name: Run build (bounded)
-        run: |
-          npm run build
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build package
+        run: npm run build --if-present
+
+      - name: Test package
+        run: npm test
