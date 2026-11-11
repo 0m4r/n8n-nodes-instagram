@@ -4,13 +4,12 @@
   "description": "Instagram node for n8n",
   "license": "MIT",
   "homepage": "https://github.com/0m4r/n8n-nodes-instagram#readme",
-  "packageManager": "npm@10.9.10",
   "keywords": [
     "n8n-community-node-package"
   ],
   "author": {
     "name": "0m4r",
-    "email": "0m4r@users.noreply.github.com"
+    "email": "omar.adobati@gmail.com"
   },
   "repository": {
     "type": "git",
