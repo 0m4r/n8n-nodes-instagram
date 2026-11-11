@@ -7,7 +7,7 @@ describe('Instagram credential definitions', () => {
     const credential = new InstagramApi();
 
     expect(credential.name).toBe('instagramApi');
-    expect(credential.displayName).toBe('Instagram (0m4r) API');
+    expect(credential.displayName).toBe('Instagram API');
     expect(credential.icon).toEqual({ light: 'file:instagram.svg', dark: 'file:instagram.svg' });
 
     const accessToken = credential.properties.find((property) => property.name === 'accessToken');
