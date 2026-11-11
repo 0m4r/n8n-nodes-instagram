@@ -4,6 +4,7 @@
   "description": "Instagram node for n8n",
   "license": "MIT",
   "homepage": "https://github.com/0m4r/n8n-nodes-instagram#readme",
+  "packageManager": "npm@11.16.0",
   "keywords": [
     "n8n-community-node-package"
   ],
