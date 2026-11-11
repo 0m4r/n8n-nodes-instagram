@@ -1,0 +1,97 @@
+{
+  "name": "03 Publish Instagram Story",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "publish-story",
+        "options": {}
+      },
+      "id": "webhook-1",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "publish-story-webhook"
+    },
+    {
+      "parameters": {
+        "resource": "stories",
+        "node": {
+          "mode": "id",
+          "id": "YOUR_IG_USER_ID"
+        },
+        "videoUrl": "={{ $json.body.videoUrl }}",
+        "caption": "={{ $json.caption || 'New story via n8n!' }}",
+        "additionalFields": {}
+      },
+      "id": "instagram-1",
+      "name": "Publish Story",
+      "type": "@0m4r/n8n-nodes-instagram.instagram",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ],
+      "credentials": {
+        "instagramApi": {
+          "id": "1",
+          "name": "Instagram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "respond-1",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        680,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Publish Story",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish Story": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "d7c9345c-db64-4560-b24b-a4fb55903733",
+  "meta": {
+    "instanceId": "132ceee1f476ef62dba91524607c2fcfeae3eface4f90b068c1328a1149da628"
+  },
+  "nodeGroups": [],
+  "id": "workflow-publish-story",
+  "tags": []
+}

@@ -1,0 +1,129 @@
+{
+  "name": "05 Instagram Comment Moderation",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "interval": 6
+            }
+          ]
+        }
+      },
+      "id": "cron-1",
+      "name": "Every 6 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "comments",
+        "operation": "list",
+        "mediaId": "YOUR_MEDIA_ID",
+        "graphApiVersion": "v26.0"
+      },
+      "id": "instagram-1",
+      "name": "List Comments",
+      "type": "@0m4r/n8n-nodes-instagram.instagram",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ],
+      "credentials": {
+        "instagramApi": {
+          "id": "1",
+          "name": "Instagram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "comments",
+        "operation": "hideComment",
+        "commentId": "={{ $json.data[0].id }}",
+        "graphApiVersion": "v26.0"
+      },
+      "id": "instagram-2",
+      "name": "Hide First Comment",
+      "type": "@0m4r/n8n-nodes-instagram.instagram",
+      "typeVersion": 1,
+      "position": [
+        680,
+        300
+      ],
+      "credentials": {
+        "instagramApi": {
+          "id": "1",
+          "name": "Instagram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "comments",
+        "operation": "sendPrivateReply",
+        "node": {
+          "mode": "id",
+          "id": "YOUR_IG_USER_ID"
+        },
+        "commentId": "={{ $json.data[0].id }}",
+        "privateReplyText": "Thanks for your comment! We've got you covered.",
+        "graphApiVersion": "v26.0"
+      },
+      "id": "instagram-3",
+      "name": "Send Private Reply",
+      "type": "@0m4r/n8n-nodes-instagram.instagram",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ],
+      "credentials": {
+        "instagramApi": {
+          "id": "1",
+          "name": "Instagram API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Every 6 Hours": {
+      "main": [
+        [
+          {
+            "node": "List Comments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Comments": {
+      "main": [
+        [
+          {
+            "node": "Hide First Comment",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Private Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "workflow-comment-moderation",
+  "tags": []
+}

@@ -1,0 +1,80 @@
+{
+  "name": "01 Publish Instagram Image",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "interval": 24
+            }
+          ]
+        }
+      },
+      "id": "cron-1",
+      "name": "Daily Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "publish",
+        "node": {
+          "mode": "id",
+          "id": "YOUR_IG_USER_ID"
+        },
+        "graphApiVersion": "v26.0",
+        "imageUrl": "https://example.com/images/photo.jpg",
+        "caption": "Hello from n8n! #instagram #automation",
+        "additionalFields": {
+          "altText": "A beautiful photo shared via n8n automation",
+          "locationId": "",
+          "productTags": {
+            "tag": []
+          },
+          "trialReelGraduationStrategy": "MANUAL",
+          "userTags": {
+            "tag": []
+          }
+        }
+      },
+      "id": "instagram-1",
+      "name": "Publish Image",
+      "type": "@0m4r/n8n-nodes-instagram.instagram",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ],
+      "credentials": {
+        "instagramApi": {
+          "id": "1",
+          "name": "Instagram API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily Schedule": {
+      "main": [
+        [
+          {
+            "node": "Publish Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "workflow-publish-image",
+  "tags": []
+}
