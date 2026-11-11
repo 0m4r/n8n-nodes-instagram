@@ -188,13 +188,13 @@ export class Instagram implements INodeType {
             description: 'Delete a comment from an Instagram media object',
           },
           {
-            name: 'Disable Comments',
+            name: 'Disable',
             value: 'disableComments',
             action: 'Disable comments on media',
             description: 'Disable comments on an Instagram media object',
           },
           {
-            name: 'Enable Comments',
+            name: 'Enable',
             value: 'enableComments',
             action: 'Enable comments on media',
             description: 'Enable comments on an Instagram media object',
