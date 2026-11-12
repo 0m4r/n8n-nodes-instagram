@@ -21,6 +21,6 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@main
 
       - uses: ./.github/actions/build-test-lint-workflow
