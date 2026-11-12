@@ -41,10 +41,10 @@ examples/
 | ------------------------- | --------------------------------------------------------------- | ------------------------------------------------------ |
 | **Credential Endpoint**   | `graph.instagram.com` (default)                                 | `graph.facebook.com`                                   |
 | **Token Type**            | Instagram User access token                                     | Facebook Login access token                            |
-| **Primary Use Cases**     | Publishing media, comments, DMs, IG User profile, token refresh | Hashtag search, Page → Instagram account lookup        |
+| **Primary Use Cases**     | Publishing media, comments, IG User profile, token refresh      | Hashtag search, Page → Instagram account lookup, Direct Messaging |
 | **Media Publishing**      | ✅ Image, Reels, Stories, Carousel                              | ❌ Not supported on this endpoint                      |
 | **Comment Moderation**    | ✅ List, hide/unhide, delete, private replies                   | ❌ Not supported                                       |
-| **Direct Messaging**      | ✅ Send DMs via Messaging API                                   | ❌ Not supported                                       |
+| **Direct Messaging**      | ⚠️ Routed via `graph.facebook.com` regardless of endpoint      | ✅ Send DMs via Messaging API                          |
 | **IG User Profile/Media** | ✅ Read profile and media                                       | ❌ Not supported                                       |
 | **Hashtag Search**        | ❌ Not supported                                                | ✅ Search by name, top media, recent media             |
 | **Page Lookup**           | ❌ Not supported                                                | ✅ Get Instagram Business Account from a Facebook Page |

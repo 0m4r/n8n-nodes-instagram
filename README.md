@@ -74,7 +74,7 @@ Steps:
    - **Facebook Graph API** (`graph.facebook.com`) - Use a Facebook Login token; required for Page lookup and hashtag search.
 5. The built-in credential test uses v26.0 to confirm the token works.
 
-Changing the endpoint does not convert your token, change its login flow, or grant permissions. Use a token issued for the selected API. Publishing, comments, private replies, and messaging are supported with Instagram Login; Page lookup and hashtag search require Facebook Login.
+Changing the endpoint does not convert your token, change its login flow, or grant permissions. Use a token issued for the selected API. Publishing, comments, and private replies are supported with Instagram Login; messaging is routed to `graph.facebook.com` regardless of the credential endpoint; Page lookup and hashtag search require Facebook Login.
 
 > **Note on Messaging:** The Instagram Messaging API (Send Message and Send Private Reply) always calls `graph.facebook.com/{version}/{ig-user-id}/messages`, regardless of the credential's API Endpoint setting. The node handles this automatically — you do not need to switch the credential to `graph.facebook.com` to send DMs or private replies. To send private replies, use a **Facebook Page access token** with `instagram_manage_messages` (a typical setup also includes `instagram_basic`, `instagram_manage_comments` and `pages_read_engagement`). See Meta's [Send a Private Reply to a Commenter](https://developers.facebook.com/documentation/instagram-platform/private-replies) and [Instagram Send API reference](https://developers.facebook.com/docs/messenger-platform/instagram/reference/send-api/).
 
