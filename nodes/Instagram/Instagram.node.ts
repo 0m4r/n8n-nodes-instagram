@@ -346,13 +346,13 @@ export class Instagram implements INodeType {
         required: true,
       },
       {
-        displayName: 'Account',
+        displayName: 'Instagram Account ID',
         name: 'node',
         type: 'resourceLocator',
         default: { mode: 'list', value: '' },
         required: true,
         description:
-          'The Instagram Business Account ID or User ID on which to publish the media, or the professional account that owns the commented media, or the IG User to read data for, or the IG User performing a hashtag or messaging query',
+          'The Instagram Business Account ID or User ID (IGSID) on which to publish the media, or the professional account that owns the commented media, or the IG User to read data for, or the IG User performing a hashtag or messaging query. Not an n8n workflow node.',
         displayOptions: {
           show: {
             resource: [
@@ -1390,7 +1390,7 @@ export class Instagram implements INodeType {
             if (!accountId || typeof accountId !== 'string') {
               throw new NodeOperationError(
                 this.getNode(),
-                `Invalid or missing account ID (node) parameter at item index ${itemIndex}. Account ID must be a non-empty string.`,
+                `Invalid or missing Instagram Account ID parameter at item index ${itemIndex}. Account ID must be a non-empty string.`,
                 { itemIndex },
               );
             }
@@ -1400,7 +1400,7 @@ export class Instagram implements INodeType {
             }
             throw new NodeOperationError(
               this.getNode(),
-              `Failed to get account ID (node) parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
+              `Failed to get Instagram Account ID parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
               { itemIndex },
             );
           }
@@ -2327,7 +2327,7 @@ export class Instagram implements INodeType {
             if (!accountId || typeof accountId !== 'string') {
               throw new NodeOperationError(
                 this.getNode(),
-                `Invalid or missing account ID (node) parameter at item index ${itemIndex}. Account ID must be a non-empty string.`,
+                `Invalid or missing Instagram Account ID parameter at item index ${itemIndex}. Account ID must be a non-empty string.`,
                 { itemIndex },
               );
             }
@@ -2337,7 +2337,7 @@ export class Instagram implements INodeType {
             }
             throw new NodeOperationError(
               this.getNode(),
-              `Failed to get account ID (node) parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
+              `Failed to get Instagram Account ID parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
               { itemIndex },
             );
           }
@@ -2781,7 +2781,7 @@ export class Instagram implements INodeType {
             if (!accountId || typeof accountId !== 'string') {
               throw new NodeOperationError(
                 this.getNode(),
-                `Invalid or missing account ID (node) parameter at item index ${itemIndex}. Account ID must be a non-empty string.`,
+                `Invalid or missing Instagram Account ID parameter at item index ${itemIndex}. Account ID must be a non-empty string.`,
                 { itemIndex },
               );
             }
@@ -2791,7 +2791,7 @@ export class Instagram implements INodeType {
             }
             throw new NodeOperationError(
               this.getNode(),
-              `Failed to get account ID (node) parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
+              `Failed to get Instagram Account ID parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
               { itemIndex },
             );
           }
@@ -3334,7 +3334,7 @@ export class Instagram implements INodeType {
                 if (!accountId || typeof accountId !== 'string') {
                   throw new NodeOperationError(
                     this.getNode(),
-                    `Invalid or missing account ID (node) parameter at item index ${itemIndex}. Account ID must be a non-empty string.`,
+                    `Invalid or missing Instagram Account ID parameter at item index ${itemIndex}. Account ID must be a non-empty string.`,
                     { itemIndex },
                   );
                 }
@@ -3344,7 +3344,7 @@ export class Instagram implements INodeType {
                 }
                 throw new NodeOperationError(
                   this.getNode(),
-                  `Failed to get account ID (node) parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
+                  `Failed to get Instagram Account ID parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
                   { itemIndex },
                 );
               }
