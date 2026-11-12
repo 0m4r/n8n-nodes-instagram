@@ -37,18 +37,18 @@ examples/
 
 ## graph.instagram.com vs graph.facebook.com — Use Case Differences
 
-| Aspect                    | `graph.instagram.com` (Instagram Login)                         | `graph.facebook.com` (Facebook Login)                  |
-| ------------------------- | --------------------------------------------------------------- | ------------------------------------------------------ |
-| **Credential Endpoint**   | `graph.instagram.com` (default)                                 | `graph.facebook.com`                                   |
-| **Token Type**            | Instagram User access token                                     | Facebook Login access token                            |
-| **Primary Use Cases**     | Publishing media, comments, IG User profile, token refresh      | Hashtag search, Page → Instagram account lookup, Direct Messaging |
-| **Media Publishing**      | ✅ Image, Reels, Stories, Carousel                              | ❌ Not supported on this endpoint                      |
-| **Comment Moderation**    | ✅ List, hide/unhide, delete, private replies                   | ❌ Not supported                                       |
-| **Direct Messaging**      | ⚠️ Routed via `graph.facebook.com` regardless of endpoint      | ✅ Send DMs via Messaging API                          |
-| **IG User Profile/Media** | ✅ Read profile and media                                       | ❌ Not supported                                       |
-| **Hashtag Search**        | ❌ Not supported                                                | ✅ Search by name, top media, recent media             |
-| **Page Lookup**           | ❌ Not supported                                                | ✅ Get Instagram Business Account from a Facebook Page |
-| **Auth (/me, refresh)**   | ✅ Token exchange, refresh, validation                          | ✅ Also works (endpoint-agnostic)                      |
+| Aspect                    | `graph.instagram.com` (Instagram Login)                    | `graph.facebook.com` (Facebook Login)                             |
+| ------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------- |
+| **Credential Endpoint**   | `graph.instagram.com` (default)                            | `graph.facebook.com`                                              |
+| **Token Type**            | Instagram User access token                                | Facebook Login access token                                       |
+| **Primary Use Cases**     | Publishing media, comments, IG User profile, token refresh | Hashtag search, Page → Instagram account lookup, Direct Messaging |
+| **Media Publishing**      | ✅ Image, Reels, Stories, Carousel                         | ❌ Not supported on this endpoint                                 |
+| **Comment Moderation**    | ✅ List, hide/unhide, delete, private replies              | ❌ Not supported                                                  |
+| **Direct Messaging**      | ⚠️ Routed via `graph.facebook.com` regardless of endpoint  | ✅ Send DMs via Messaging API                                     |
+| **IG User Profile/Media** | ✅ Read profile and media                                  | ❌ Not supported                                                  |
+| **Hashtag Search**        | ❌ Not supported                                           | ✅ Search by name, top media, recent media                        |
+| **Page Lookup**           | ❌ Not supported                                           | ✅ Get Instagram Business Account from a Facebook Page            |
+| **Auth (/me, refresh)**   | ✅ Token exchange, refresh, validation                     | ✅ Also works (endpoint-agnostic)                                 |
 
 ### When to use `graph.instagram.com`
 
@@ -83,13 +83,13 @@ Most workflows use the **Instagram API** credential. Workflow 11 additionally ne
 
 The examples use two different trigger mechanisms. They are **not interchangeable** — they serve opposite directions of communication.
 
-| | Generic Webhook (`n8n-nodes-base.webhook`) | Instagram Trigger (`instagramTrigger`) |
-|---|---|---|
-| **Who initiates** | An external system (CMS, mobile app, another n8n workflow) sends an HTTP request **to n8n** | Meta/Instagram pushes an event **to n8n** |
-| **Direction** | **Outbound**: n8n → Instagram (publish, send DM, etc.) | **Inbound**: Instagram → n8n (comment, message, mention, etc.) |
-| **Typical use** | On-demand or external-system-triggered actions | Real-time reaction to Instagram activity |
-| **Auth** | None by default | Meta signature verification (`X-Hub-Signature-256`) + Verify Token challenge |
-| **Credential** | None | **Instagram Webhook API** (Meta App Secret) |
+|                   | Generic Webhook (`n8n-nodes-base.webhook`)                                                  | Instagram Trigger (`instagramTrigger`)                                       |
+| ----------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| **Who initiates** | An external system (CMS, mobile app, another n8n workflow) sends an HTTP request **to n8n** | Meta/Instagram pushes an event **to n8n**                                    |
+| **Direction**     | **Outbound**: n8n → Instagram (publish, send DM, etc.)                                      | **Inbound**: Instagram → n8n (comment, message, mention, etc.)               |
+| **Typical use**   | On-demand or external-system-triggered actions                                              | Real-time reaction to Instagram activity                                     |
+| **Auth**          | None by default                                                                             | Meta signature verification (`X-Hub-Signature-256`) + Verify Token challenge |
+| **Credential**    | None                                                                                        | **Instagram Webhook API** (Meta App Secret)                                  |
 
 ### Use a Generic Webhook when…
 
@@ -113,22 +113,22 @@ Example using the Instagram Trigger: **11** (Trigger & Auto-Reply).
 
 ### Example mapping
 
-| # | Example | Trigger | Why |
-|---|---------|---------|-----|
-| 01 | Publish Image | Cron | Scheduled publishing |
-| 02 | Publish Reel | Cron | Scheduled publishing |
-| 03 | Publish Story | Generic Webhook | External system initiates publishing |
-| 04 | Publish Carousel | Cron | Scheduled publishing |
-| 05 | Comment Moderation | Cron | Batch moderation (could use Instagram Trigger for real-time) |
-| 06 | IG User Profile | Cron | Read-only periodic sync |
-| 07 | Hashtag Search | Cron | Periodic research |
-| 08 | Send Direct Message | Generic Webhook | External system initiates a DM |
-| 09 | Token Operations | Cron | Scheduled token maintenance |
-| 10 | Page → IG Account | Cron | Periodic lookup |
-| 11 | Trigger & Auto-Reply | **Instagram Trigger** | Real-time inbound events from Meta |
-| 12 | Content Pipeline | Generic Webhook | External system initiates publishing |
+| #   | Example              | Trigger               | Why                                                          |
+| --- | -------------------- | --------------------- | ------------------------------------------------------------ |
+| 01  | Publish Image        | Cron                  | Scheduled publishing                                         |
+| 02  | Publish Reel         | Cron                  | Scheduled publishing                                         |
+| 03  | Publish Story        | Generic Webhook       | External system initiates publishing                         |
+| 04  | Publish Carousel     | Cron                  | Scheduled publishing                                         |
+| 05  | Comment Moderation   | Cron                  | Batch moderation (could use Instagram Trigger for real-time) |
+| 06  | IG User Profile      | Cron                  | Read-only periodic sync                                      |
+| 07  | Hashtag Search       | Cron                  | Periodic research                                            |
+| 08  | Send Direct Message  | Generic Webhook       | External system initiates a DM                               |
+| 09  | Token Operations     | Cron                  | Scheduled token maintenance                                  |
+| 10  | Page → IG Account    | Cron                  | Periodic lookup                                              |
+| 11  | Trigger & Auto-Reply | **Instagram Trigger** | Real-time inbound events from Meta                           |
+| 12  | Content Pipeline     | Generic Webhook       | External system initiates publishing                         |
 
-> **Key takeaway:** If your workflow starts because *you* (or an external system) want to do something *to* Instagram, use a generic webhook (or cron). If your workflow starts because *Instagram* pushed an event to you, use the Instagram Trigger.
+> **Key takeaway:** If your workflow starts because _you_ (or an external system) want to do something _to_ Instagram, use a generic webhook (or cron). If your workflow starts because _Instagram_ pushed an event to you, use the Instagram Trigger.
 
 For curl examples and n8n HTTP Request payloads for each webhook example, see the individual `.md` files for examples 03, 08, and 12.
 

@@ -12,10 +12,7 @@
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": "1.1",
-      "position": [
-        240,
-        300
-      ]
+      "position": [240, 300]
     },
     {
       "parameters": {
@@ -33,10 +30,7 @@
       "name": "Send Message",
       "type": "@0m4r/n8n-nodes-instagram.instagram",
       "typeVersion": 1,
-      "position": [
-        460,
-        300
-      ]
+      "position": [460, 300]
     },
     {
       "parameters": {
@@ -47,10 +41,7 @@
       "name": "Respond to Webhook",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": "1.1",
-      "position": [
-        680,
-        300
-      ]
+      "position": [680, 300]
     }
   ],
   "connections": {

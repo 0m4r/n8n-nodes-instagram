@@ -29,6 +29,7 @@ This workflow uses a **Generic Webhook trigger** (`n8n-nodes-base.webhook`).
 After importing and activating the workflow, copy the webhook URL from the **Webhook Trigger** node.
 
 **curl:**
+
 ```bash
 curl -X POST "https://your-n8n-instance.com/webhook/content-pipeline" \
   -H "Content-Type: application/json" \
@@ -40,6 +41,7 @@ curl -X POST "https://your-n8n-instance.com/webhook/content-pipeline" \
 ```
 
 **HTTP Request (n8n):**
+
 ```json
 {
   "url": "={{ $json.webhookUrl }}",

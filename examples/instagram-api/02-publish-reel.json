@@ -16,10 +16,7 @@
       "name": "Weekly Schedule",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.4,
-      "position": [
-        240,
-        300
-      ]
+      "position": [240, 300]
     },
     {
       "parameters": {
@@ -48,10 +45,7 @@
       "name": "Publish Reel",
       "type": "@0m4r/n8n-nodes-instagram.instagram",
       "typeVersion": 1,
-      "position": [
-        460,
-        300
-      ],
+      "position": [460, 300],
       "credentials": {
         "instagramApi": {
           "id": "1",

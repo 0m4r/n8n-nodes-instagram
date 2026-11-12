@@ -42,6 +42,7 @@ This workflow uses a **Cron trigger** (every 6 hours).
 ## Other comment operations available
 
 The Comments resource also supports:
+
 - `Unhide Comment` — restore a previously hidden comment
 - `Delete Comment` — remove a comment entirely
 - `Disable Comments` / `Enable Comments` — toggle comments on a media object

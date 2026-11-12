@@ -12,10 +12,7 @@
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": "1.1",
-      "position": [
-        240,
-        200
-      ]
+      "position": [240, 200]
     },
     {
       "parameters": {
@@ -27,10 +24,7 @@
       "name": "Verify Token (/me)",
       "type": "@0m4r/n8n-nodes-instagram.instagram",
       "typeVersion": 1,
-      "position": [
-        460,
-        200
-      ]
+      "position": [460, 200]
     },
     {
       "parameters": {
@@ -59,10 +53,7 @@
       "name": "Publish Image",
       "type": "@0m4r/n8n-nodes-instagram.instagram",
       "typeVersion": 1,
-      "position": [
-        680,
-        200
-      ]
+      "position": [680, 200]
     },
     {
       "parameters": {
@@ -73,10 +64,7 @@
       "name": "Respond to Webhook",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": "1.1",
-      "position": [
-        900,
-        200
-      ]
+      "position": [900, 200]
     }
   ],
   "connections": {

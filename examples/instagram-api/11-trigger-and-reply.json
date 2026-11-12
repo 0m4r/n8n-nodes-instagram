@@ -4,20 +4,14 @@
     {
       "parameters": {
         "verifyToken": "YOUR_VERIFY_TOKEN",
-        "eventsToInclude": [
-          "comments",
-          "messages"
-        ],
+        "eventsToInclude": ["comments", "messages"],
         "skipSignatureVerification": false
       },
       "id": "instagramtrigger-1",
       "name": "Instagram Trigger",
       "type": "@0m4r/n8n-nodes-instagram.instagramTrigger",
       "typeVersion": 2,
-      "position": [
-        240,
-        300
-      ]
+      "position": [240, 300]
     },
     {
       "parameters": {
@@ -35,10 +29,7 @@
       "name": "Is Comment?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [
-        460,
-        300
-      ]
+      "position": [460, 300]
     },
     {
       "parameters": {
@@ -56,10 +47,7 @@
       "name": "Is Message?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [
-        460,
-        500
-      ]
+      "position": [460, 500]
     },
     {
       "parameters": {
@@ -77,10 +65,7 @@
       "name": "Reply to Comment",
       "type": "@0m4r/n8n-nodes-instagram.instagram",
       "typeVersion": 1,
-      "position": [
-        680,
-        300
-      ]
+      "position": [680, 300]
     },
     {
       "parameters": {
@@ -98,10 +83,7 @@
       "name": "Reply to Message",
       "type": "@0m4r/n8n-nodes-instagram.instagram",
       "typeVersion": 1,
-      "position": [
-        680,
-        500
-      ]
+      "position": [680, 500]
     }
   ],
   "connections": {

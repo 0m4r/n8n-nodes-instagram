@@ -16,10 +16,7 @@
       "name": "Weekly Schedule",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.4,
-      "position": [
-        240,
-        300
-      ]
+      "position": [240, 300]
     },
     {
       "parameters": {
@@ -31,10 +28,7 @@
       "name": "Refresh Access Token",
       "type": "@0m4r/n8n-nodes-instagram.instagram",
       "typeVersion": 1,
-      "position": [
-        460,
-        300
-      ]
+      "position": [460, 300]
     },
     {
       "parameters": {
@@ -46,10 +40,7 @@
       "name": "Get /me",
       "type": "@0m4r/n8n-nodes-instagram.instagram",
       "typeVersion": 1,
-      "position": [
-        680,
-        300
-      ]
+      "position": [680, 300]
     }
   ],
   "connections": {

@@ -16,10 +16,7 @@
       "name": "Every 6 Hours",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.4,
-      "position": [
-        240,
-        300
-      ]
+      "position": [240, 300]
     },
     {
       "parameters": {
@@ -32,10 +29,7 @@
       "name": "List Comments",
       "type": "@0m4r/n8n-nodes-instagram.instagram",
       "typeVersion": 1,
-      "position": [
-        460,
-        300
-      ],
+      "position": [460, 300],
       "credentials": {
         "instagramApi": {
           "id": "1",
@@ -54,10 +48,7 @@
       "name": "Hide First Comment",
       "type": "@0m4r/n8n-nodes-instagram.instagram",
       "typeVersion": 1,
-      "position": [
-        680,
-        300
-      ],
+      "position": [680, 300],
       "credentials": {
         "instagramApi": {
           "id": "1",
@@ -81,10 +72,7 @@
       "name": "Send Private Reply",
       "type": "@0m4r/n8n-nodes-instagram.instagram",
       "typeVersion": 1,
-      "position": [
-        900,
-        300
-      ],
+      "position": [900, 300],
       "credentials": {
         "instagramApi": {
           "id": "1",
