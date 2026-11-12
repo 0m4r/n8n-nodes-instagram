@@ -185,6 +185,47 @@ describe('Instagram node request contracts', () => {
     });
   });
 
+  it('surfaces the Graph API error response instead of replacing it with a custom message', async () => {
+    const apiError = Object.assign(new Error('Bad Request'), {
+      httpCode: '400',
+      response: {
+        body: {
+          error: {
+            message: 'The hashtag query is not supported for this account.',
+            type: 'OAuthException',
+            code: 100,
+            error_subcode: 33,
+          },
+        },
+      },
+    });
+    const context = {
+      continueOnFail: () => false,
+      getCredentials: async () => ({ apiEndpoint: 'graph.facebook.com' }),
+      getInputData: () => [{ json: {} }],
+      getNode: () => ({ name: 'Instagram' }),
+      getNodeParameter: (name: string) =>
+        ({
+          resource: 'igHashtag',
+          operation: 'search',
+          graphApiVersion: 'v26.0',
+          node: 'account-1',
+          hashtagName: 'travel',
+        })[name],
+      helpers: {
+        httpRequestWithAuthentication: vi.fn(async () => {
+          throw apiError;
+        }),
+      },
+      logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
+    } as unknown as IExecuteFunctions;
+
+    await expect(new Instagram().execute.call(context)).rejects.toMatchObject({
+      description: 'The hashtag query is not supported for this account.',
+      httpCode: '400',
+    });
+  });
+
   it('routes hashtag searches through the hashtag resource handler', async () => {
     const { context, requests } = createExecuteContext(
       {

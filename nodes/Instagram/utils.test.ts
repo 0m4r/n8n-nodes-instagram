@@ -11,6 +11,16 @@ describe('toNodeError', () => {
     expect(toNodeError(node, error)).toBe(error);
   });
 
+  it('preserves an existing node API error and its API details', () => {
+    const error = new NodeApiError(node, {
+      message: 'Bad Request',
+      httpCode: '400',
+      response: { body: { error: { message: 'Invalid parameter' } } },
+    });
+
+    expect(toNodeError(node, error)).toBe(error);
+  });
+
   it('wraps other errors in a node API error', () => {
     expect(toNodeError(node, { message: 'Request failed' })).toBeInstanceOf(NodeApiError);
   });

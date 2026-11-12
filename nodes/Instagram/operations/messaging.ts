@@ -4,9 +4,8 @@ import type {
   IExecuteFunctions,
   IHttpRequestOptions,
   INodeExecutionData,
-  JsonObject,
 } from 'n8n-workflow';
-import { NodeApiError, NodeOperationError } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
 import { toNodeError } from '../utils';
 
 export async function handleMessaging(
@@ -167,24 +166,7 @@ export async function handleMessaging(
           recipientId,
           url,
         });
-
-        if (error instanceof NodeOperationError) {
-          throw toNodeError(ctx.getNode(), error);
-        }
-
-        throw new NodeApiError(ctx.getNode(), error, {
-          message: 'Failed to send message via Instagram Messaging API',
-          description: JSON.stringify(
-            {
-              error: error instanceof Error ? error.message : String(error),
-              accountId,
-              recipientId,
-              url,
-            },
-            null,
-            2,
-          ),
-        });
+        throw toNodeError(ctx.getNode(), error);
       }
 
       returnItems.push({ json: response, pairedItem: { item: itemIndex } });
@@ -196,7 +178,7 @@ export async function handleMessaging(
     });
   } catch (error) {
     if (!ctx.continueOnFail()) {
-      throw new NodeApiError(ctx.getNode(), error as JsonObject);
+      throw toNodeError(ctx.getNode(), error);
     }
 
     let errorItem;

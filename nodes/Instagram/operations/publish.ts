@@ -296,22 +296,11 @@ export async function handlePublish(
         ctx.helpers.httpRequestWithAuthentication.call(ctx, 'instagramApi', mediaRequestOptions),
     )) as IDataObject | string;
   } catch (error: unknown) {
-    // Extract detailed error message for better debugging
-    let errorMessage = 'Unknown error';
-    let errorCode: number | undefined;
-    let errorType: string | undefined;
-
     type ResponseErrorType = {
       statusCode?: number;
       response?: {
         body?: {
-          error?: {
-            message?: string;
-            type?: string;
-            code?: number;
-            error_subcode?: number;
-            [key: string]: unknown;
-          };
+          error?: IDataObject;
         };
         headers?: Record<string, unknown>;
       };
@@ -319,63 +308,8 @@ export async function handlePublish(
     };
 
     const err = error as ResponseErrorType;
-
-    if (err.response?.body?.error) {
-      const graphError = err.response.body.error;
-      errorMessage = graphError.message || errorMessage;
-      errorCode = graphError.code;
-      errorType = graphError.type;
-    } else if (err.message) {
-      errorMessage = err.message;
-    } else if (error instanceof Error) {
-      errorMessage = error.message;
-    } else {
-      errorMessage = String(error);
-    }
-
-    // Check for common URL-related errors and provide helpful messages
-    const lowerErrorMessage = errorMessage.toLowerCase();
-    if (
-      lowerErrorMessage.includes('invalid url') ||
-      lowerErrorMessage.includes('url') ||
-      lowerErrorMessage.includes('not found') ||
-      lowerErrorMessage.includes('404') ||
-      lowerErrorMessage.includes('cannot access') ||
-      lowerErrorMessage.includes('unreachable')
-    ) {
-      const urlToCheck = videoUrl || imageUrl || 'provided URL';
-      throw new NodeOperationError(
-        ctx.getNode(),
-        `Failed to create media container: The ${videoUrl ? 'video' : 'image'} URL appears to be invalid or unreachable. Error: ${errorMessage}${errorCode ? ` (Code: ${errorCode})` : ''}. Please verify that the URL is accessible and points to a valid ${videoUrl ? 'video' : 'image'} file. URL: ${urlToCheck.substring(0, 100)}${urlToCheck.length > 100 ? '...' : ''}`,
-        { itemIndex },
-      );
-    }
-
     if (!ctx.continueOnFail()) {
-      // Create a more detailed error
-      const errorObj = err.response?.body?.error;
-      const detailedError: JsonObject = {
-        message: errorMessage,
-        ...(errorCode && { code: errorCode }),
-        ...(errorType && { type: errorType }),
-        ...(err.statusCode && { statusCode: err.statusCode }),
-      };
-
-      // Add error details if available (only primitive values)
-      if (errorObj && typeof errorObj === 'object' && !Array.isArray(errorObj)) {
-        Object.keys(errorObj).forEach((key) => {
-          const value = (errorObj as IDataObject)[key];
-          if (
-            value !== undefined &&
-            value !== null &&
-            (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')
-          ) {
-            detailedError[`error_${key}`] = value;
-          }
-        });
-      }
-
-      throw new NodeApiError(ctx.getNode(), detailedError);
+      throw toNodeError(ctx.getNode(), error);
     }
 
     let errorItem: Record<string, unknown>;
@@ -422,12 +356,12 @@ export async function handlePublish(
         : undefined;
 
     if (!ctx.continueOnFail()) {
-      const errorDetails = errorMessage
-        ? ` API Error: ${errorMessage}${errorCode ? ` (Code: ${errorCode})` : ''}`
-        : '';
+      if (errorObj && typeof errorObj === 'object' && !Array.isArray(errorObj)) {
+        throw new NodeApiError(ctx.getNode(), responseData as JsonObject);
+      }
       throw new NodeOperationError(
         ctx.getNode(),
-        `Media creation response did not contain a valid id (creation_id).${errorDetails} Response: ${JSON.stringify(mediaResponse)}`,
+        `Media creation response did not contain a valid id (creation_id). Response: ${JSON.stringify(mediaResponse)}`,
         { itemIndex },
       );
     }
@@ -449,15 +383,8 @@ export async function handlePublish(
   const responseData = mediaResponse as IDataObject;
   const responseError = responseData.error;
   if (responseError && typeof responseError === 'object' && !Array.isArray(responseError)) {
-    const errorObj = responseError as IDataObject;
-    const errorMsg = errorObj.message as string | undefined;
-    const errorCode = errorObj.code as number | undefined;
     if (!ctx.continueOnFail()) {
-      throw new NodeOperationError(
-        ctx.getNode(),
-        `Media container creation returned an error despite providing an ID. Error: ${errorMsg || 'Unknown error'}${errorCode ? ` (Code: ${errorCode})` : ''}. Container ID: ${creationId}. This may indicate the media URL is invalid or inaccessible.`,
-        { itemIndex },
-      );
+      throw new NodeApiError(ctx.getNode(), responseData as JsonObject);
     }
   }
 
@@ -474,14 +401,7 @@ export async function handlePublish(
       maxPollAttempts: handler.maxPollAttempts,
     });
   } catch (error) {
-    if (error instanceof NodeOperationError) {
-      throw toNodeError(ctx.getNode(), error);
-    }
-    throw new NodeOperationError(
-      ctx.getNode(),
-      `Failed to wait for container to become ready. Creation ID: ${creationId}, Resource: ${resource}. Error: ${error instanceof Error ? error.message : String(error)}`,
-      { itemIndex },
-    );
+    throw toNodeError(ctx.getNode(), error);
   }
 
   // Second request: Publish media
@@ -530,7 +450,7 @@ export async function handlePublish(
       }
 
       if (!ctx.continueOnFail()) {
-        throw new NodeApiError(ctx.getNode(), error as JsonObject);
+        throw toNodeError(ctx.getNode(), error);
       }
 
       let errorItem;

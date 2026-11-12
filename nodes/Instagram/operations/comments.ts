@@ -4,9 +4,8 @@ import type {
   IExecuteFunctions,
   IHttpRequestOptions,
   INodeExecutionData,
-  JsonObject,
 } from 'n8n-workflow';
-import { NodeApiError, NodeOperationError } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
 import { toNodeError } from '../utils';
 
 export async function handleComments(
@@ -91,14 +90,7 @@ export async function handleComments(
           );
         }
       } catch (error) {
-        if (error instanceof NodeOperationError) {
-          throw toNodeError(ctx.getNode(), error);
-        }
-        throw new NodeOperationError(
-          ctx.getNode(),
-          `Failed to list comments for media ${mediaId}: ${error instanceof Error ? error.message : String(error)}`,
-          { itemIndex },
-        );
+        throw toNodeError(ctx.getNode(), error);
       }
 
       returnItems.push({ json: response, pairedItem: { item: itemIndex } });
@@ -160,14 +152,7 @@ export async function handleComments(
           );
         }
       } catch (error) {
-        if (error instanceof NodeOperationError) {
-          throw toNodeError(ctx.getNode(), error);
-        }
-        throw new NodeOperationError(
-          ctx.getNode(),
-          `Failed to ${operation} for comment ${commentId}: ${error instanceof Error ? error.message : String(error)}`,
-          { itemIndex },
-        );
+        throw toNodeError(ctx.getNode(), error);
       }
 
       returnItems.push({ json: response, pairedItem: { item: itemIndex } });
@@ -225,14 +210,7 @@ export async function handleComments(
           );
         }
       } catch (error) {
-        if (error instanceof NodeOperationError) {
-          throw toNodeError(ctx.getNode(), error);
-        }
-        throw new NodeOperationError(
-          ctx.getNode(),
-          `Failed to delete comment ${commentId}: ${error instanceof Error ? error.message : String(error)}`,
-          { itemIndex },
-        );
+        throw toNodeError(ctx.getNode(), error);
       }
 
       returnItems.push({ json: response, pairedItem: { item: itemIndex } });
@@ -294,14 +272,7 @@ export async function handleComments(
           );
         }
       } catch (error) {
-        if (error instanceof NodeOperationError) {
-          throw toNodeError(ctx.getNode(), error);
-        }
-        throw new NodeOperationError(
-          ctx.getNode(),
-          `Failed to ${operation} for media ${mediaId}: ${error instanceof Error ? error.message : String(error)}`,
-          { itemIndex },
-        );
+        throw toNodeError(ctx.getNode(), error);
       }
 
       returnItems.push({ json: response, pairedItem: { item: itemIndex } });
@@ -435,15 +406,7 @@ export async function handleComments(
           accountId,
           commentId,
         });
-
-        if (error instanceof NodeOperationError) {
-          throw toNodeError(ctx.getNode(), error);
-        }
-        throw new NodeOperationError(
-          ctx.getNode(),
-          `Failed to send private reply to comment ${commentId} for account ${accountId}: ${error instanceof Error ? error.message : String(error)}`,
-          { itemIndex },
-        );
+        throw toNodeError(ctx.getNode(), error);
       }
 
       returnItems.push({ json: response, pairedItem: { item: itemIndex } });
@@ -455,7 +418,7 @@ export async function handleComments(
     });
   } catch (error) {
     if (!ctx.continueOnFail()) {
-      throw new NodeApiError(ctx.getNode(), error as JsonObject);
+      throw toNodeError(ctx.getNode(), error);
     }
 
     let errorItem;

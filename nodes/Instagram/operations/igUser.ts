@@ -4,9 +4,8 @@ import type {
   IExecuteFunctions,
   IHttpRequestOptions,
   INodeExecutionData,
-  JsonObject,
 } from 'n8n-workflow';
-import { NodeApiError, NodeOperationError } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
 import { toNodeError } from '../utils';
 
 export async function handleIgUser(
@@ -108,14 +107,7 @@ export async function handleIgUser(
           );
         }
       } catch (error) {
-        if (error instanceof NodeOperationError) {
-          throw toNodeError(ctx.getNode(), error);
-        }
-        throw new NodeOperationError(
-          ctx.getNode(),
-          `Failed to get IG User profile for account ${accountId}: ${error instanceof Error ? error.message : String(error)}`,
-          { itemIndex },
-        );
+        throw toNodeError(ctx.getNode(), error);
       }
 
       returnItems.push({ json: response, pairedItem: { item: itemIndex } });
@@ -229,14 +221,7 @@ export async function handleIgUser(
             );
           }
         } catch (error) {
-          if (error instanceof NodeOperationError) {
-            throw toNodeError(ctx.getNode(), error);
-          }
-          throw new NodeOperationError(
-            ctx.getNode(),
-            `Failed to fetch media for account ${accountId} at page ${pageNumber}: ${error instanceof Error ? error.message : String(error)}`,
-            { itemIndex },
-          );
+          throw toNodeError(ctx.getNode(), error);
         }
 
         const pageData = (response.data as IDataObject[] | undefined) ?? [];
@@ -273,7 +258,7 @@ export async function handleIgUser(
     });
   } catch (error) {
     if (!ctx.continueOnFail()) {
-      throw new NodeApiError(ctx.getNode(), error as JsonObject);
+      throw toNodeError(ctx.getNode(), error);
     }
 
     let errorItem;

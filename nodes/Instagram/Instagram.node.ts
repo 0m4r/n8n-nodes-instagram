@@ -9,9 +9,8 @@ import type {
   INodePropertyOptions,
   INodeType,
   INodeTypeDescription,
-  JsonObject,
 } from 'n8n-workflow';
-import { NodeApiError, NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
+import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 import { instagramProperties } from './properties';
 import { toNodeError } from './utils';
 import { handleMessaging } from './operations/messaging';
@@ -197,7 +196,7 @@ export class Instagram implements INodeType {
         await handlePublish(this, resource, operation, hostUrl, itemIndex, items, returnItems);
       } catch (error) {
         if (!this.continueOnFail()) {
-          throw new NodeApiError(this.getNode(), error as JsonObject);
+          throw toNodeError(this.getNode(), error);
         }
 
         let errorItem;

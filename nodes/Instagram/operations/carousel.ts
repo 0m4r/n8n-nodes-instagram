@@ -338,6 +338,9 @@ export async function handleCarousel(
 
         const childId = childResponse.id as string | undefined;
         if (!childId || typeof childId !== 'string') {
+          if (childResponse.error && typeof childResponse.error === 'object') {
+            throw new NodeApiError(ctx.getNode(), childResponse as JsonObject);
+          }
           throw new NodeOperationError(
             ctx.getNode(),
             `Carousel item ${i + 1}: Container creation did not return a valid ID.`,
@@ -356,12 +359,8 @@ export async function handleCarousel(
         });
 
         childIds.push(childId);
-      } catch (err) {
-        throw new NodeOperationError(
-          ctx.getNode(),
-          `Carousel item ${i + 1}: ${err instanceof Error ? err.message : String(err)}`,
-          { itemIndex },
-        );
+      } catch (error) {
+        throw toNodeError(ctx.getNode(), error);
       }
     }
 
@@ -394,16 +393,15 @@ export async function handleCarousel(
             carouselRequestOptions,
           ),
       );
-    } catch (err) {
-      throw new NodeOperationError(
-        ctx.getNode(),
-        `Carousel container creation: ${err instanceof Error ? err.message : String(err)}`,
-        { itemIndex },
-      );
+    } catch (error) {
+      throw toNodeError(ctx.getNode(), error);
     }
 
     const carouselContainerId = carouselResponse.id as string | undefined;
     if (!carouselContainerId || typeof carouselContainerId !== 'string') {
+      if (carouselResponse.error && typeof carouselResponse.error === 'object') {
+        throw new NodeApiError(ctx.getNode(), carouselResponse as JsonObject);
+      }
       throw new NodeOperationError(
         ctx.getNode(),
         `Carousel container creation did not return a valid ID.`,
@@ -422,12 +420,8 @@ export async function handleCarousel(
         pollIntervalMs: 60_000,
         maxTotalTimeMs: 5 * 60 * 1000,
       });
-    } catch (err) {
-      throw new NodeOperationError(
-        ctx.getNode(),
-        `Carousel container ready: ${err instanceof Error ? err.message : String(err)}`,
-        { itemIndex },
-      );
+    } catch (error) {
+      throw toNodeError(ctx.getNode(), error);
     }
 
     // Publish carousel
@@ -450,12 +444,8 @@ export async function handleCarousel(
         publishOptions,
         () => ctx.helpers.httpRequestWithAuthentication.call(ctx, 'instagramApi', publishOptions),
       );
-    } catch (err) {
-      throw new NodeOperationError(
-        ctx.getNode(),
-        `Carousel publish: ${err instanceof Error ? err.message : String(err)} (container ${carouselContainerId})`,
-        { itemIndex },
-      );
+    } catch (error) {
+      throw toNodeError(ctx.getNode(), error);
     }
 
     returnItems.push({
@@ -474,9 +464,7 @@ export async function handleCarousel(
     );
 
     if (!ctx.continueOnFail()) {
-      throw error instanceof NodeApiError
-        ? error
-        : new NodeApiError(ctx.getNode(), error as JsonObject);
+      throw toNodeError(ctx.getNode(), error);
     }
     type GraphError = {
       message?: string;

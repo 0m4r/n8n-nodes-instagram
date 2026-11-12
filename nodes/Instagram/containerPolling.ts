@@ -227,13 +227,7 @@ export const waitForContainerReady = async (
           }. Error: ${error instanceof Error ? error.message : String(error)}`,
         );
 
-        throw new NodeOperationError(
-          ctx.getNode(),
-          `Failed to poll Instagram container status. Container ID: ${creationId}. Last status: ${
-            lastStatusCode ?? 'unknown'
-          }. Last error: ${error instanceof Error ? error.message : String(error)}`,
-          { itemIndex },
-        );
+        throw toNodeError(ctx.getNode(), error);
       }
 
       ctx.logger.warn(

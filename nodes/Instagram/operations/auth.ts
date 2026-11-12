@@ -4,9 +4,8 @@ import type {
   IExecuteFunctions,
   IHttpRequestOptions,
   INodeExecutionData,
-  JsonObject,
 } from 'n8n-workflow';
-import { NodeApiError, NodeOperationError } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
 import { toNodeError } from '../utils';
 
 export async function handleAuth(
@@ -87,14 +86,7 @@ export async function handleAuth(
           );
         }
       } catch (error) {
-        if (error instanceof NodeOperationError) {
-          throw toNodeError(ctx.getNode(), error);
-        }
-        throw new NodeOperationError(
-          ctx.getNode(),
-          `Failed to refresh access token: ${error instanceof Error ? error.message : String(error)}`,
-          { itemIndex },
-        );
+        throw toNodeError(ctx.getNode(), error);
       }
 
       returnItems.push({ json: response, pairedItem: { item: itemIndex } });
@@ -177,14 +169,7 @@ export async function handleAuth(
           );
         }
       } catch (error) {
-        if (error instanceof NodeOperationError) {
-          throw toNodeError(ctx.getNode(), error);
-        }
-        throw new NodeOperationError(
-          ctx.getNode(),
-          `Failed to exchange access token: ${error instanceof Error ? error.message : String(error)}`,
-          { itemIndex },
-        );
+        throw toNodeError(ctx.getNode(), error);
       }
 
       returnItems.push({ json: response, pairedItem: { item: itemIndex } });
@@ -233,14 +218,7 @@ export async function handleAuth(
           );
         }
       } catch (error) {
-        if (error instanceof NodeOperationError) {
-          throw toNodeError(ctx.getNode(), error);
-        }
-        throw new NodeOperationError(
-          ctx.getNode(),
-          `Failed to get user profile from /me endpoint: ${error instanceof Error ? error.message : String(error)}`,
-          { itemIndex },
-        );
+        throw toNodeError(ctx.getNode(), error);
       }
 
       returnItems.push({ json: response, pairedItem: { item: itemIndex } });
@@ -252,7 +230,7 @@ export async function handleAuth(
     });
   } catch (error) {
     if (!ctx.continueOnFail()) {
-      throw new NodeApiError(ctx.getNode(), error as JsonObject);
+      throw toNodeError(ctx.getNode(), error);
     }
 
     let errorItem;
