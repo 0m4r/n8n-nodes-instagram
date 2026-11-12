@@ -1041,6 +1041,7 @@ export class Instagram implements INodeType {
       pollingDurationSeconds: number;
       pollIntervalMs: number;
       maxTotalTimeMs: number;
+      maxPollAttempts: number;
       pollCount: number;
     };
 
@@ -1051,6 +1052,7 @@ export class Instagram implements INodeType {
       itemIndex,
       pollIntervalMs = 60_000,
       maxTotalTimeMs = 5 * 60 * 1000,
+      maxPollAttempts = Infinity,
     }: {
       creationId: string;
       hostUrl: string;
@@ -1058,6 +1060,7 @@ export class Instagram implements INodeType {
       itemIndex: number;
       pollIntervalMs?: number;
       maxTotalTimeMs?: number;
+      maxPollAttempts?: number;
     }): Promise<ContainerReadyResult> => {
       if (!creationId || typeof creationId !== 'string') {
         throw new NodeOperationError(
@@ -1109,6 +1112,14 @@ export class Instagram implements INodeType {
 
       while (Date.now() < deadline) {
         pollCount++;
+
+        if (pollCount > maxPollAttempts) {
+          throw new NodeOperationError(
+            this.getNode(),
+            `Container ${creationId} not ready after ${maxPollAttempts} poll attempts. Last status: ${lastStatusCode ?? 'unknown'}.`,
+            { itemIndex },
+          );
+        }
 
         try {
           const statusResponse = (await this.helpers.httpRequestWithAuthentication.call(
@@ -1190,6 +1201,7 @@ export class Instagram implements INodeType {
               pollingDurationSeconds: elapsedSeconds,
               pollIntervalMs,
               maxTotalTimeMs,
+              maxPollAttempts,
               pollCount,
             };
           }
@@ -3924,8 +3936,9 @@ export class Instagram implements INodeType {
             hostUrl,
             graphApiVersion,
             itemIndex,
-            pollIntervalMs: 60_000,
+            pollIntervalMs: handler.pollIntervalMs,
             maxTotalTimeMs: 5 * 60 * 1000,
+            maxPollAttempts: handler.maxPollAttempts,
           });
         } catch (error) {
           if (error instanceof NodeOperationError) {
