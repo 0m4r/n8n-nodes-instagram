@@ -1,3 +1,4 @@
+import { requestWithLogging } from '../httpLogging';
 import type {
   IDataObject,
   IExecuteFunctions,
@@ -77,10 +78,12 @@ export async function handlePage(
 
       let response: IDataObject;
       try {
-        response = (await ctx.helpers.httpRequestWithAuthentication.call(
-          ctx,
-          'instagramApi',
+        response = (await requestWithLogging(
+          ctx.logger,
+          'operations/page.ts:handlePage',
+          operation,
           requestOptions,
+          () => ctx.helpers.httpRequestWithAuthentication.call(ctx, 'instagramApi', requestOptions),
         )) as IDataObject;
 
         if (!response || typeof response !== 'object') {

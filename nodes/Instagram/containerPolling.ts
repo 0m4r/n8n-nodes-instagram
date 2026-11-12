@@ -1,3 +1,4 @@
+import { requestWithLogging } from './httpLogging';
 import type { IDataObject, IExecuteFunctions, IHttpRequestOptions } from 'n8n-workflow';
 import { NodeOperationError, sleep } from 'n8n-workflow';
 import { interpretContainerStatus } from './containerStatus';
@@ -77,7 +78,7 @@ export const waitForContainerReady = async (
   const maxConsecutiveErrors = 5;
 
   ctx.logger.info(
-    `Instagram: waiting for container ${creationId} to become ready (max ${Math.round(
+    `[containerPolling.ts:waitForContainerReady] Waiting for container ${creationId} to become ready (max ${Math.round(
       maxTotalTimeMs / 1000,
     )}s, polling every ${Math.round(pollIntervalMs / 1000)}s).`,
   );
@@ -94,27 +95,20 @@ export const waitForContainerReady = async (
     }
 
     try {
-      ctx.logger.debug('Instagram: polling container status request:', {
-        creationId,
-        pollCount,
-      });
-
-      const statusResponse = (await ctx.helpers.httpRequestWithAuthentication.call(
-        ctx,
-        'instagramApi',
+      const statusResponse = (await requestWithLogging(
+        ctx.logger,
+        'containerPolling.ts:waitForContainerReady',
+        'pollContainerStatus',
         pollRequestOptions,
+        () =>
+          ctx.helpers.httpRequestWithAuthentication.call(ctx, 'instagramApi', pollRequestOptions),
       )) as IDataObject;
-
-      ctx.logger.debug('Instagram: polling container status response:', {
-        creationId,
-        statusResponse,
-      });
 
       if (!statusResponse || typeof statusResponse !== 'object') {
         consecutiveErrors++;
 
         ctx.logger.warn(
-          `Instagram: received invalid status response for container ${creationId} (${consecutiveErrors}/${maxConsecutiveErrors}).`,
+          `[containerPolling.ts:waitForContainerReady] Received invalid status response for container ${creationId} (${consecutiveErrors}/${maxConsecutiveErrors}).`,
         );
 
         if (consecutiveErrors >= maxConsecutiveErrors) {
@@ -148,7 +142,7 @@ export const waitForContainerReady = async (
       const authoritativeStatus = containerStatus.authoritativeStatus ?? 'unknown';
 
       ctx.logger.info(
-        `Instagram: container ${creationId} status=${authoritativeStatus}, elapsed=${elapsedSeconds}s, poll=${pollCount}.`,
+        `[containerPolling.ts:waitForContainerReady] Container ${creationId} status=${authoritativeStatus}, elapsed=${elapsedSeconds}s, poll=${pollCount}.`,
       );
 
       // A failure in either Graph status field always wins over a ready value.
@@ -159,7 +153,7 @@ export const waitForContainerReady = async (
             : undefined;
 
         ctx.logger.error(
-          `Instagram: container ${creationId} failed with status ${authoritativeStatus} on poll ${pollCount}. ${
+          `[containerPolling.ts:waitForContainerReady] Container ${creationId} failed with status ${authoritativeStatus} on poll ${pollCount}. ${
             statusError ? `Details: ${statusError}` : ''
           }`,
         );
@@ -174,7 +168,9 @@ export const waitForContainerReady = async (
       }
 
       if (containerStatus.state === 'ready') {
-        ctx.logger.info(`Instagram: container ${creationId} is ready after ${elapsedSeconds}s.`);
+        ctx.logger.info(
+          `[containerPolling.ts:waitForContainerReady] Container ${creationId} is ready after ${elapsedSeconds}s.`,
+        );
 
         return {
           containerId: creationId,
@@ -197,7 +193,7 @@ export const waitForContainerReady = async (
         slowWarningSent = true;
 
         ctx.logger.warn(
-          `Instagram: container ${creationId} has been processing for over 60 seconds.`,
+          `[containerPolling.ts:waitForContainerReady] Container ${creationId} has been processing for over 60 seconds.`,
         );
       }
 
@@ -226,7 +222,7 @@ export const waitForContainerReady = async (
 
       if (isFatalRequestError || consecutiveErrors >= maxConsecutiveErrors) {
         ctx.logger.error(
-          `Instagram: failed to poll container ${creationId}. Last status: ${
+          `[containerPolling.ts:waitForContainerReady] Failed to poll container ${creationId}. Last status: ${
             lastStatusCode ?? 'unknown'
           }. Error: ${error instanceof Error ? error.message : String(error)}`,
         );
@@ -241,7 +237,7 @@ export const waitForContainerReady = async (
       }
 
       ctx.logger.warn(
-        `Instagram: transient error while polling container ${creationId} (${consecutiveErrors}/${maxConsecutiveErrors}): ${
+        `[containerPolling.ts:waitForContainerReady] Transient error while polling container ${creationId} (${consecutiveErrors}/${maxConsecutiveErrors}): ${
           error instanceof Error ? error.message : String(error)
         }`,
       );
@@ -254,7 +250,7 @@ export const waitForContainerReady = async (
   const elapsedSeconds = Math.round((Date.now() - startTime) / 1000);
 
   ctx.logger.error(
-    `Instagram: timed out waiting for container ${creationId} after ${elapsedSeconds}s. Last status: ${
+    `[containerPolling.ts:waitForContainerReady] Timed out waiting for container ${creationId} after ${elapsedSeconds}s. Last status: ${
       lastStatusCode ?? 'unknown'
     }.`,
   );

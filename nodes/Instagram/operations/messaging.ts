@@ -1,3 +1,4 @@
+import { requestWithLogging } from '../httpLogging';
 import type {
   IDataObject,
   IExecuteFunctions,
@@ -142,21 +143,15 @@ export async function handleMessaging(
         json: true,
       };
 
-      ctx.logger.debug('Instagram sendMessage request options:', {
-        url: requestOptions.url,
-        method: requestOptions.method,
-        body: requestOptions.body,
-      });
-
       let response: IDataObject;
       try {
-        response = (await ctx.helpers.httpRequestWithAuthentication.call(
-          ctx,
-          'instagramApi',
+        response = (await requestWithLogging(
+          ctx.logger,
+          'operations/messaging.ts:handleMessaging',
+          operation,
           requestOptions,
+          () => ctx.helpers.httpRequestWithAuthentication.call(ctx, 'instagramApi', requestOptions),
         )) as IDataObject;
-
-        ctx.logger.debug('Instagram sendMessage response:', response);
 
         if (!response || typeof response !== 'object') {
           throw new NodeOperationError(
@@ -166,7 +161,7 @@ export async function handleMessaging(
           );
         }
       } catch (error) {
-        ctx.logger.error('Instagram sendMessage error:', {
+        ctx.logger.error('[operations/messaging.ts:handleMessaging] sendMessage error', {
           errorMessage: error instanceof Error ? error.message : String(error),
           accountId,
           recipientId,

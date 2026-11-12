@@ -1,3 +1,4 @@
+import { requestWithLogging } from '../httpLogging';
 import type {
   IDataObject,
   IExecuteFunctions,
@@ -286,10 +287,13 @@ export async function handlePublish(
 
   let mediaResponse: IDataObject | string;
   try {
-    mediaResponse = (await ctx.helpers.httpRequestWithAuthentication.call(
-      ctx,
-      'instagramApi',
+    mediaResponse = (await requestWithLogging(
+      ctx.logger,
+      'operations/publish.ts:handlePublish',
+      operation,
       mediaRequestOptions,
+      () =>
+        ctx.helpers.httpRequestWithAuthentication.call(ctx, 'instagramApi', mediaRequestOptions),
     )) as IDataObject | string;
   } catch (error: unknown) {
     // Extract detailed error message for better debugging
@@ -505,10 +509,17 @@ export async function handlePublish(
 
   for (let attempt = 1; attempt <= publishMaxAttempts; attempt++) {
     try {
-      publishResponse = (await ctx.helpers.httpRequestWithAuthentication.call(
-        ctx,
-        'instagramApi',
+      publishResponse = (await requestWithLogging(
+        ctx.logger,
+        'operations/publish.ts:handlePublish',
+        operation,
         publishRequestOptions,
+        () =>
+          ctx.helpers.httpRequestWithAuthentication.call(
+            ctx,
+            'instagramApi',
+            publishRequestOptions,
+          ),
       )) as IDataObject | string;
       publishSucceeded = true;
       break;

@@ -1,3 +1,4 @@
+import { requestWithLogging } from '../httpLogging';
 import type {
   IDataObject,
   IExecuteFunctions,
@@ -313,17 +314,26 @@ export async function handleCarousel(
           ? { media_type: 'VIDEO', video_url: url, is_carousel_item: true }
           : { image_url: url, is_carousel_item: true };
 
+      const childRequestOptions: IHttpRequestOptions = {
+        headers: { accept: 'application/json,text/*;q=0.99' },
+        method: 'POST',
+        url: mediaUri,
+        qs: childQs,
+        json: true,
+      };
+
       try {
-        const childResponse = await ctx.helpers.httpRequestWithAuthentication.call(
-          ctx,
-          'instagramApi',
-          {
-            headers: { accept: 'application/json,text/*;q=0.99' },
-            method: 'POST',
-            url: mediaUri,
-            qs: childQs,
-            json: true,
-          } as IHttpRequestOptions,
+        const childResponse = await requestWithLogging(
+          ctx.logger,
+          'operations/carousel.ts:handleCarousel',
+          operation,
+          childRequestOptions,
+          () =>
+            ctx.helpers.httpRequestWithAuthentication.call(
+              ctx,
+              'instagramApi',
+              childRequestOptions,
+            ),
         );
 
         const childId = childResponse.id as string | undefined;
@@ -362,15 +372,28 @@ export async function handleCarousel(
       caption,
     };
 
+    const carouselRequestOptions: IHttpRequestOptions = {
+      headers: { accept: 'application/json,text/*;q=0.99' },
+      method: 'POST',
+      url: mediaUri,
+      qs: carouselQs,
+      json: true,
+    };
+
     let carouselResponse: IDataObject;
     try {
-      carouselResponse = await ctx.helpers.httpRequestWithAuthentication.call(ctx, 'instagramApi', {
-        headers: { accept: 'application/json,text/*;q=0.99' },
-        method: 'POST',
-        url: mediaUri,
-        qs: carouselQs,
-        json: true,
-      } as IHttpRequestOptions);
+      carouselResponse = await requestWithLogging(
+        ctx.logger,
+        'operations/carousel.ts:handleCarousel',
+        operation,
+        carouselRequestOptions,
+        () =>
+          ctx.helpers.httpRequestWithAuthentication.call(
+            ctx,
+            'instagramApi',
+            carouselRequestOptions,
+          ),
+      );
     } catch (err) {
       throw new NodeOperationError(
         ctx.getNode(),
@@ -420,10 +443,12 @@ export async function handleCarousel(
 
     let publishResponse: IDataObject;
     try {
-      publishResponse = await ctx.helpers.httpRequestWithAuthentication.call(
-        ctx,
-        'instagramApi',
+      publishResponse = await requestWithLogging(
+        ctx.logger,
+        'operations/carousel.ts:handleCarousel',
+        operation,
         publishOptions,
+        () => ctx.helpers.httpRequestWithAuthentication.call(ctx, 'instagramApi', publishOptions),
       );
     } catch (err) {
       throw new NodeOperationError(
@@ -443,7 +468,7 @@ export async function handleCarousel(
     return;
   } catch (error) {
     ctx.logger.error(
-      `Instagram carousel operation failed: ${
+      `[operations/carousel.ts:handleCarousel] Operation failed: ${
         error instanceof Error ? error.message : String(error)
       }`,
     );

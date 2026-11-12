@@ -36,6 +36,7 @@ describe('Instagram node request contracts', () => {
     const context = {
       getCredentials: async () => ({ apiEndpoint: 'graph.instagram.com' }),
       helpers: { httpRequestWithAuthentication: request },
+      logger: { error: vi.fn(), debug: vi.fn() },
     } as unknown as ILoadOptionsFunctions;
 
     await expect(

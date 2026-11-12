@@ -1,3 +1,4 @@
+import { requestWithLogging } from '../httpLogging';
 import type {
   IDataObject,
   IExecuteFunctions,
@@ -74,10 +75,12 @@ export async function handleComments(
 
       let response: IDataObject;
       try {
-        response = (await ctx.helpers.httpRequestWithAuthentication.call(
-          ctx,
-          'instagramApi',
+        response = (await requestWithLogging(
+          ctx.logger,
+          'operations/comments.ts:handleComments',
+          operation,
           requestOptions,
+          () => ctx.helpers.httpRequestWithAuthentication.call(ctx, 'instagramApi', requestOptions),
         )) as IDataObject;
 
         if (!response || typeof response !== 'object') {
@@ -141,10 +144,12 @@ export async function handleComments(
 
       let response: IDataObject;
       try {
-        response = (await ctx.helpers.httpRequestWithAuthentication.call(
-          ctx,
-          'instagramApi',
+        response = (await requestWithLogging(
+          ctx.logger,
+          'operations/comments.ts:handleComments',
+          operation,
           requestOptions,
+          () => ctx.helpers.httpRequestWithAuthentication.call(ctx, 'instagramApi', requestOptions),
         )) as IDataObject;
 
         if (!response || typeof response !== 'object') {
@@ -204,10 +209,12 @@ export async function handleComments(
 
       let response: IDataObject;
       try {
-        response = (await ctx.helpers.httpRequestWithAuthentication.call(
-          ctx,
-          'instagramApi',
+        response = (await requestWithLogging(
+          ctx.logger,
+          'operations/comments.ts:handleComments',
+          operation,
           requestOptions,
+          () => ctx.helpers.httpRequestWithAuthentication.call(ctx, 'instagramApi', requestOptions),
         )) as IDataObject;
 
         if (!response || typeof response !== 'object') {
@@ -271,10 +278,12 @@ export async function handleComments(
 
       let response: IDataObject;
       try {
-        response = (await ctx.helpers.httpRequestWithAuthentication.call(
-          ctx,
-          'instagramApi',
+        response = (await requestWithLogging(
+          ctx.logger,
+          'operations/comments.ts:handleComments',
+          operation,
           requestOptions,
+          () => ctx.helpers.httpRequestWithAuthentication.call(ctx, 'instagramApi', requestOptions),
         )) as IDataObject;
 
         if (!response || typeof response !== 'object') {
@@ -403,21 +412,15 @@ export async function handleComments(
         json: true,
       };
 
-      ctx.logger.debug('Instagram sendPrivateReply request options:', {
-        url: requestOptions.url,
-        method: requestOptions.method,
-        body: requestOptions.body,
-      });
-
       let response: IDataObject;
       try {
-        response = (await ctx.helpers.httpRequestWithAuthentication.call(
-          ctx,
-          'instagramApi',
+        response = (await requestWithLogging(
+          ctx.logger,
+          'operations/comments.ts:handleComments',
+          operation,
           requestOptions,
+          () => ctx.helpers.httpRequestWithAuthentication.call(ctx, 'instagramApi', requestOptions),
         )) as IDataObject;
-
-        ctx.logger.debug('Instagram sendPrivateReply response:', response);
 
         if (!response || typeof response !== 'object') {
           throw new NodeOperationError(
@@ -427,7 +430,7 @@ export async function handleComments(
           );
         }
       } catch (error) {
-        ctx.logger.error('Instagram sendPrivateReply error:', {
+        ctx.logger.error('[operations/comments.ts:handleComments] sendPrivateReply error', {
           errorMessage: error instanceof Error ? error.message : String(error),
           accountId,
           commentId,

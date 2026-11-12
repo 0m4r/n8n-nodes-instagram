@@ -1,3 +1,4 @@
+import { requestWithLogging } from '../httpLogging';
 import type {
   IDataObject,
   IExecuteFunctions,
@@ -91,10 +92,12 @@ export async function handleIgUser(
 
       let response: IDataObject;
       try {
-        response = (await ctx.helpers.httpRequestWithAuthentication.call(
-          ctx,
-          'instagramApi',
+        response = (await requestWithLogging(
+          ctx.logger,
+          'operations/igUser.ts:handleIgUser',
+          operation,
           requestOptions,
+          () => ctx.helpers.httpRequestWithAuthentication.call(ctx, 'instagramApi', requestOptions),
         )) as IDataObject;
 
         if (!response || typeof response !== 'object') {
@@ -209,10 +212,13 @@ export async function handleIgUser(
 
         let response: IDataObject;
         try {
-          response = (await ctx.helpers.httpRequestWithAuthentication.call(
-            ctx,
-            'instagramApi',
+          response = (await requestWithLogging(
+            ctx.logger,
+            'operations/igUser.ts:handleIgUser',
+            operation,
             requestOptions,
+            () =>
+              ctx.helpers.httpRequestWithAuthentication.call(ctx, 'instagramApi', requestOptions),
           )) as IDataObject;
 
           if (!response || typeof response !== 'object') {

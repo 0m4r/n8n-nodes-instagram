@@ -1,3 +1,4 @@
+import { requestWithLogging } from '../httpLogging';
 import type {
   IDataObject,
   IExecuteFunctions,
@@ -103,10 +104,12 @@ export async function handleIgHashtag(
 
       let response: IDataObject;
       try {
-        response = (await ctx.helpers.httpRequestWithAuthentication.call(
-          ctx,
-          'instagramApi',
+        response = (await requestWithLogging(
+          ctx.logger,
+          'operations/igHashtag.ts:handleIgHashtag',
+          operation,
           requestOptions,
+          () => ctx.helpers.httpRequestWithAuthentication.call(ctx, 'instagramApi', requestOptions),
         )) as IDataObject;
 
         if (!response || typeof response !== 'object') {
@@ -245,10 +248,13 @@ export async function handleIgHashtag(
 
         let response: IDataObject;
         try {
-          response = (await ctx.helpers.httpRequestWithAuthentication.call(
-            ctx,
-            'instagramApi',
+          response = (await requestWithLogging(
+            ctx.logger,
+            'operations/igHashtag.ts:handleIgHashtag',
+            operation,
             requestOptions,
+            () =>
+              ctx.helpers.httpRequestWithAuthentication.call(ctx, 'instagramApi', requestOptions),
           )) as IDataObject;
 
           if (!response || typeof response !== 'object') {

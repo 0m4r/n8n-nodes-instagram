@@ -1,3 +1,4 @@
+import { requestWithLogging } from '../httpLogging';
 import type {
   IDataObject,
   IExecuteFunctions,
@@ -70,7 +71,13 @@ export async function handleAuth(
 
       let response: IDataObject;
       try {
-        response = (await ctx.helpers.httpRequest.call(ctx, requestOptions)) as IDataObject;
+        response = (await requestWithLogging(
+          ctx.logger,
+          'operations/auth.ts:handleAuth',
+          operation,
+          requestOptions,
+          () => ctx.helpers.httpRequest.call(ctx, requestOptions),
+        )) as IDataObject;
 
         if (!response || typeof response !== 'object') {
           throw new NodeOperationError(
@@ -154,7 +161,13 @@ export async function handleAuth(
 
       let response: IDataObject;
       try {
-        response = (await ctx.helpers.httpRequest.call(ctx, requestOptions)) as IDataObject;
+        response = (await requestWithLogging(
+          ctx.logger,
+          'operations/auth.ts:handleAuth',
+          operation,
+          requestOptions,
+          () => ctx.helpers.httpRequest.call(ctx, requestOptions),
+        )) as IDataObject;
 
         if (!response || typeof response !== 'object') {
           throw new NodeOperationError(
@@ -204,10 +217,12 @@ export async function handleAuth(
 
       let response: IDataObject;
       try {
-        response = (await ctx.helpers.httpRequestWithAuthentication.call(
-          ctx,
-          'instagramApi',
+        response = (await requestWithLogging(
+          ctx.logger,
+          'operations/auth.ts:handleAuth',
+          operation,
           requestOptions,
+          () => ctx.helpers.httpRequestWithAuthentication.call(ctx, 'instagramApi', requestOptions),
         )) as IDataObject;
 
         if (!response || typeof response !== 'object') {
@@ -266,9 +281,10 @@ export async function handleAuth(
     } else {
       errorItem = error as IDataObject;
     }
-    ctx.logger.debug(
-      `Carousel publish failed. Status: ${errorWithGraph.statusCode ?? 'unknown'}, Response Body: ${JSON.stringify(errorWithGraph.response?.body || error)}`,
-    );
+    ctx.logger.error('[operations/auth.ts:handleAuth] Operation failed', {
+      statusCode: errorWithGraph.statusCode,
+      apiResponse: errorWithGraph.response?.body ?? error,
+    });
     returnItems.push({ json: { ...errorItem }, pairedItem: { item: itemIndex } });
     return;
   }

@@ -1,3 +1,4 @@
+import { requestWithLogging } from './httpLogging';
 import type {
   IDataObject,
   IExecuteFunctions,
@@ -96,10 +97,13 @@ export class Instagram implements INodeType {
             json: true,
           };
 
-          const response = (await this.helpers.httpRequestWithAuthentication.call(
-            this,
-            'instagramApi',
+          const response = (await requestWithLogging(
+            this.logger,
+            'Instagram.node.ts:searchInstagramAccounts',
+            'searchInstagramAccounts',
             requestOptions,
+            () =>
+              this.helpers.httpRequestWithAuthentication.call(this, 'instagramApi', requestOptions),
           )) as IDataObject;
 
           // Add the account from /me response
