@@ -23,6 +23,8 @@ This workflow listens for real-time Instagram webhook events (comments and messa
 - **Instagram API** credential (`instagramApi`) configured with a **Facebook Page access token** whose **API Endpoint** is set to **Facebook Graph API** (`graph.facebook.com`). The token needs `instagram_manage_messages` to send private replies (a typical setup also includes `instagram_basic`, `instagram_manage_comments` and `pages_read_engagement`). The default `graph.instagram.com` (Instagram Login) endpoint does **not** support private replies.
 - Replace `YOUR_VERIFY_TOKEN` with a secret string matching your Meta App Dashboard webhook settings.
 - Replace `YOUR_IG_USER_ID` with your Instagram Business/Creator account ID.
+- **Important**: Private replies can only be sent within 7 days of the comment being made. After 7 days, the Instagram API will return "Bad request - please check your parameters". Ensure the comment is recent before attempting to reply.
+- The comment ID is extracted from webhook data as `{{ $json.value.id }}` (not `comment_id`).
 
 ## Setup in Meta App Dashboard
 
@@ -39,6 +41,7 @@ This workflow listens for real-time Instagram webhook events (comments and messa
 3. Set your verify token and IG User ID.
 4. Activate the workflow.
 5. When someone comments or messages your Instagram account, n8n will receive the webhook and reply automatically.
+6. **Important**: Check that the comment is within 7 days of being posted. The webhook data includes the comment's creation `time` field. If the comment is older than 7 days, the Instagram API will reject the private reply with "Bad request - please check your parameters".
 
 ## Why Instagram Trigger?
 

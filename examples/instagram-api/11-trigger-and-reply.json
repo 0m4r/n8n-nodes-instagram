@@ -69,7 +69,7 @@
           "mode": "id",
           "id": "YOUR_IG_USER_ID"
         },
-        "commentId": "={{ $json.value.comment_id }}",
+        "commentId": "={{ $json.value.id }}",
         "privateReplyText": "Thanks for commenting! We'll get back to you soon.",
         "graphApiVersion": "v26.0"
       },

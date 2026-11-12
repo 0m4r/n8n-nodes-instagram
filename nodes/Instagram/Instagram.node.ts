@@ -1449,11 +1449,21 @@ export class Instagram implements INodeType {
                 );
               }
 
-              // NOTE: The Instagram Messaging API is only available on
-              // graph.facebook.com, regardless of the credential's API Endpoint
-              // setting. See:
-              // https://developers.facebook.com/documentation/business-messaging/instagram-messaging/features/send-message
-              const url = `https://graph.facebook.com/${graphApiVersion}/${accountId}/messages`;
+              // Get API endpoint from credentials to determine the correct host URL.
+              // The Instagram Messaging API (Send Message + Send Private Reply) supports
+              // both graph.instagram.com (Instagram Login) and graph.facebook.com
+              // (Facebook Login), depending on the credential configuration.
+              let hostUrl = 'graph.facebook.com'; // Default for messaging API backward compatibility
+              try {
+                const credentials = await this.getCredentials('instagramApi');
+                if (credentials?.apiEndpoint && typeof credentials.apiEndpoint === 'string') {
+                  hostUrl = credentials.apiEndpoint;
+                }
+              } catch {
+                // Use default if credentials can't be retrieved
+              }
+
+              const url = `https://${hostUrl}/${graphApiVersion}/${accountId}/messages`;
 
               const requestOptions: IHttpRequestOptions = {
                 headers: {
@@ -3393,7 +3403,18 @@ export class Instagram implements INodeType {
               // comments) is only available on graph.facebook.com, regardless of
               // the credential's API Endpoint setting. See:
               // https://developers.facebook.com/documentation/instagram-platform/private-replies
-              const url = `https://graph.facebook.com/${graphApiVersion}/${accountId}/messages`;
+              // 
+              let hostUrl = 'graph.facebook.com'; // Default for messaging API backward compatibility
+              try {
+                const credentials = await this.getCredentials('instagramApi');
+                if (credentials?.apiEndpoint && typeof credentials.apiEndpoint === 'string') {
+                  hostUrl = credentials.apiEndpoint;
+                }
+              } catch {
+                // Use default if credentials can't be retrieved
+              }
+
+              const url = `https://${hostUrl}/${graphApiVersion}/${accountId}/messages`;
 
               const requestOptions: IHttpRequestOptions = {
                 headers: {

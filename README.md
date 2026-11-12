@@ -76,7 +76,18 @@ Steps:
 
 Changing the endpoint does not convert your token, change its login flow, or grant permissions. Use a token issued for the selected API. Publishing, comments, and private replies are supported with Instagram Login; messaging is routed to `graph.facebook.com` regardless of the credential endpoint; Page lookup and hashtag search require Facebook Login.
 
-> **Note on Messaging:** The Instagram Messaging API (Send Message and Send Private Reply) always calls `graph.facebook.com/{version}/{ig-user-id}/messages`, regardless of the credential's API Endpoint setting. The node handles this automatically — you do not need to switch the credential to `graph.facebook.com` to send DMs or private replies. To send private replies, use a **Facebook Page access token** with `instagram_manage_messages` (a typical setup also includes `instagram_basic`, `instagram_manage_comments` and `pages_read_engagement`). See Meta's [Send a Private Reply to a Commenter](https://developers.facebook.com/documentation/instagram-platform/private-replies) and [Instagram Send API reference](https://developers.facebook.com/docs/messenger-platform/instagram/reference/send-api/).
+> **Note on Messaging:** The Instagram Messaging API (Send Message and Send Private Reply) supports two host URLs depending on your credential's **API Endpoint** setting:
+>
+> - **Instagram Graph API** (`graph.instagram.com`) - Use with Instagram Login access token
+> - **Facebook Graph API** (`graph.facebook.com`) - Use with Facebook Page access token
+>
+> The node automatically uses the host URL matching your credential's **API Endpoint** setting. The default is `graph.facebook.com` for backward compatibility.
+>
+> **Important:** You must use the correct access token type for your chosen API endpoint:
+> - Instagram Login: Use an **Instagram User access token**
+> - Facebook Login: Use a **Facebook Page access token** with `instagram_manage_messages` permission
+>
+> See Meta's [Send a Private Reply to a Commenter](https://developers.facebook.com/documentation/instagram-platform/private-replies) and [Instagram Send API reference](https://developers.facebook.com/docs/messenger-platform/instagram/reference/send-api/) for more details.
 
 ### Instagram Webhook Trigger credentials
 
