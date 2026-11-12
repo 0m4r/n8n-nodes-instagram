@@ -32,7 +32,7 @@ const createExecutionContext = (statusResponse: Record<string, unknown>) => {
     getNode: () => ({ name: 'Instagram' }),
     getNodeParameter: (name: string) => parameters[name],
     helpers: { httpRequestWithAuthentication: request },
-    logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
+    logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
   } as unknown as IExecuteFunctions;
 
   return { context, requests };
