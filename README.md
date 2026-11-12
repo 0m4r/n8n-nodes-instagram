@@ -250,6 +250,7 @@ Each event is output as an item with `object`, `field`, `value`, `id`, `time` an
 
 | Version      | Notes                                                                                                                                                                                                                                                                                                                                |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 4.1.11-beta.6 | See [CHANGELOG.md](CHANGELOG.md) for complete release notes. |
 | 4.1.11-beta.5 | See [CHANGELOG.md](CHANGELOG.md) for complete release notes. |
 | 4.1.11-beta.4 | See [CHANGELOG.md](CHANGELOG.md) for complete release notes. |
 | 4.1.11-beta.3 | See [CHANGELOG.md](CHANGELOG.md) for complete release notes. |
