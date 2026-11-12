@@ -20,7 +20,7 @@ This workflow listens for real-time Instagram webhook events (comments and messa
 ## Prerequisites
 
 - **Instagram Webhook API** credential (`instagramWebhookApi`) configured with your Meta App Secret.
-- **Instagram API** credential (`instagramApi`) configured with a long-lived access token.
+- **Instagram API** credential (`instagramApi`) configured with a **Facebook Page access token** whose **API Endpoint** is set to **Facebook Graph API** (`graph.facebook.com`). The token needs `instagram_manage_messages` to send private replies (a typical setup also includes `instagram_basic`, `instagram_manage_comments` and `pages_read_engagement`). The default `graph.instagram.com` (Instagram Login) endpoint does **not** support private replies.
 - Replace `YOUR_VERIFY_TOKEN` with a secret string matching your Meta App Dashboard webhook settings.
 - Replace `YOUR_IG_USER_ID` with your Instagram Business/Creator account ID.
 

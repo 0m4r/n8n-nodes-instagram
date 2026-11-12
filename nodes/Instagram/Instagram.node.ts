@@ -1437,7 +1437,11 @@ export class Instagram implements INodeType {
                 );
               }
 
-              const url = `https://${hostUrl}/${graphApiVersion}/${accountId}/messages`;
+              // NOTE: The Instagram Messaging API is only available on
+              // graph.facebook.com, regardless of the credential's API Endpoint
+              // setting. See:
+              // https://developers.facebook.com/documentation/business-messaging/instagram-messaging/features/send-message
+              const url = `https://graph.facebook.com/${graphApiVersion}/${accountId}/messages`;
 
               const requestOptions: IHttpRequestOptions = {
                 headers: {
@@ -3373,7 +3377,11 @@ export class Instagram implements INodeType {
                 );
               }
 
-              const url = `https://${hostUrl}/${graphApiVersion}/${accountId}/messages`;
+              // NOTE: The Instagram Messaging API (including private replies to
+              // comments) is only available on graph.facebook.com, regardless of
+              // the credential's API Endpoint setting. See:
+              // https://developers.facebook.com/documentation/instagram-platform/private-replies
+              const url = `https://graph.facebook.com/${graphApiVersion}/${accountId}/messages`;
 
               const requestOptions: IHttpRequestOptions = {
                 headers: {
