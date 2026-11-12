@@ -1122,11 +1122,21 @@ export class Instagram implements INodeType {
         }
 
         try {
+          this.logger.debug('Instagram: polling container status request:', {
+            creationId,
+            pollCount,
+          });
+
           const statusResponse = (await this.helpers.httpRequestWithAuthentication.call(
             this,
             'instagramApi',
             pollRequestOptions,
           )) as IDataObject;
+
+          this.logger.debug('Instagram: polling container status response:', {
+            creationId,
+            statusResponse,
+          });
 
           if (!statusResponse || typeof statusResponse !== 'object') {
             consecutiveErrors++;
@@ -1483,6 +1493,12 @@ export class Instagram implements INodeType {
                 json: true,
               };
 
+              this.logger.debug('Instagram sendMessage request options:', {
+                  url: requestOptions.url,
+                  method: requestOptions.method,
+                  body: requestOptions.body,
+                });
+
               let response: IDataObject;
               try {
                 response = (await this.helpers.httpRequestWithAuthentication.call(
@@ -1490,6 +1506,8 @@ export class Instagram implements INodeType {
                   'instagramApi',
                   requestOptions,
                 )) as IDataObject;
+
+                this.logger.debug('Instagram sendMessage response:', response);
 
                 if (!response || typeof response !== 'object') {
                   throw new NodeOperationError(
@@ -1499,14 +1517,26 @@ export class Instagram implements INodeType {
                   );
                 }
               } catch (error) {
+                this.logger.error('Instagram sendMessage error:', {
+                  errorMessage: error instanceof Error ? error.message : String(error),
+                  accountId,
+                  recipientId,
+                  url,
+                });
+
                 if (error instanceof NodeOperationError) {
                   throw toNodeError(this.getNode(), error);
                 }
-                throw new NodeOperationError(
-                  this.getNode(),
-                  `Failed to send message via Instagram Messaging API. Account ID: ${accountId}, Recipient ID: ${recipientId}. Error: ${error instanceof Error ? error.message : String(error)}`,
-                  { itemIndex },
-                );
+
+                throw new NodeApiError(this.getNode(), error, {
+                  message: 'Failed to send message via Instagram Messaging API',
+                  description: JSON.stringify({
+                    error: error instanceof Error ? error.message : String(error),
+                    accountId,
+                    recipientId,
+                    url,
+                  }, null, 2),
+                });
               }
 
               returnItems.push({ json: response, pairedItem: { item: itemIndex } });
@@ -3403,7 +3433,7 @@ export class Instagram implements INodeType {
               // comments) is only available on graph.facebook.com, regardless of
               // the credential's API Endpoint setting. See:
               // https://developers.facebook.com/documentation/instagram-platform/private-replies
-              // 
+              //
               let hostUrl = 'graph.facebook.com'; // Default for messaging API backward compatibility
               try {
                 const credentials = await this.getCredentials('instagramApi');
@@ -3434,6 +3464,12 @@ export class Instagram implements INodeType {
                 json: true,
               };
 
+              this.logger.debug('Instagram sendPrivateReply request options:', {
+                  url: requestOptions.url,
+                  method: requestOptions.method,
+                  body: requestOptions.body,
+                });
+
               let response: IDataObject;
               try {
                 response = (await this.helpers.httpRequestWithAuthentication.call(
@@ -3441,6 +3477,8 @@ export class Instagram implements INodeType {
                   'instagramApi',
                   requestOptions,
                 )) as IDataObject;
+
+                this.logger.debug('Instagram sendPrivateReply response:', response);
 
                 if (!response || typeof response !== 'object') {
                   throw new NodeOperationError(
@@ -3450,6 +3488,12 @@ export class Instagram implements INodeType {
                   );
                 }
               } catch (error) {
+                this.logger.error('Instagram sendPrivateReply error:', {
+                  errorMessage: error instanceof Error ? error.message : String(error),
+                  accountId,
+                  commentId,
+                });
+
                 if (error instanceof NodeOperationError) {
                   throw toNodeError(this.getNode(), error);
                 }
