@@ -70,7 +70,7 @@ jobs:
       contents: read
 
     steps:
-      - uses: ./.github/workflows/_build-test-lint.yml
+      - uses: ./.github/workflows/build-test-lint-workflow.yml
 
       - name: Verify tag matches package version
         env:
