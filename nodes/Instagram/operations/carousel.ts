@@ -1,0 +1,487 @@
+import type {
+  IDataObject,
+  IExecuteFunctions,
+  IHttpRequestOptions,
+  INodeExecutionData,
+  JsonObject,
+} from 'n8n-workflow';
+import { NodeApiError, NodeOperationError } from 'n8n-workflow';
+import { toNodeError } from '../utils';
+import { waitForContainerReady } from '../containerPolling';
+
+export async function handleCarousel(
+  ctx: IExecuteFunctions,
+  _resource: string,
+  operation: string,
+  hostUrl: string,
+  itemIndex: number,
+  items: INodeExecutionData[],
+  returnItems: INodeExecutionData[],
+): Promise<void> {
+  try {
+    let node: string;
+    let graphApiVersion: string;
+    let caption: string;
+    let carouselMedia: {
+      mediaItem?: Array<{ mediaType: string; imageUrl?: string; videoUrl?: string }>;
+    };
+
+    try {
+      const nodeParam = ctx.getNodeParameter('node', itemIndex) as string | { value: string };
+
+      // Handle both old string format and new resourceLocator format
+
+      node = typeof nodeParam === 'string' ? nodeParam : nodeParam.value;
+      if (!node || typeof node !== 'string') {
+        throw new NodeOperationError(
+          ctx.getNode(),
+          `Invalid or missing node (account ID) parameter at item index ${itemIndex}. Node must be a non-empty string.`,
+          { itemIndex },
+        );
+      }
+    } catch (error) {
+      if (error instanceof NodeOperationError) {
+        throw toNodeError(ctx.getNode(), error);
+      }
+      throw new NodeOperationError(
+        ctx.getNode(),
+        `Failed to get node parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
+        { itemIndex },
+      );
+    }
+
+    try {
+      // Get API version from node parameter
+      graphApiVersion = ctx.getNodeParameter('graphApiVersion', itemIndex) as string;
+      if (!graphApiVersion || typeof graphApiVersion !== 'string') {
+        throw new NodeOperationError(
+          ctx.getNode(),
+          `Invalid or missing Graph API version parameter at item index ${itemIndex}. Graph API version must be a non-empty string (e.g., 'v22.0').`,
+          { itemIndex },
+        );
+      }
+    } catch (error) {
+      if (error instanceof NodeOperationError) {
+        throw toNodeError(ctx.getNode(), error);
+      }
+      throw new NodeOperationError(
+        ctx.getNode(),
+        `Failed to get Graph API version parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
+        { itemIndex },
+      );
+    }
+
+    try {
+      caption = ctx.getNodeParameter('caption', itemIndex) as string;
+      if (typeof caption !== 'string') {
+        throw new NodeOperationError(
+          ctx.getNode(),
+          `Invalid caption parameter at item index ${itemIndex}. Caption must be a string.`,
+          { itemIndex },
+        );
+      }
+    } catch (error) {
+      if (error instanceof NodeOperationError) {
+        throw toNodeError(ctx.getNode(), error);
+      }
+      throw new NodeOperationError(
+        ctx.getNode(),
+        `Failed to get caption parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
+        { itemIndex },
+      );
+    }
+
+    const carouselInputMode = ctx.getNodeParameter(
+      'carouselInputMode',
+      itemIndex,
+      'manual',
+    ) as string;
+
+    const resolveFieldPath = (source: IDataObject, path: string) => {
+      if (!path) return undefined;
+      const parts = path.split('.');
+      let current: unknown = source;
+      for (const part of parts) {
+        if (current == null || typeof current !== 'object') {
+          return undefined;
+        }
+        current = (current as IDataObject)[part];
+      }
+      return current;
+    };
+
+    if (carouselInputMode === 'fromField') {
+      const fieldName = ctx.getNodeParameter('carouselMediaArrayField', itemIndex) as string;
+      if (!fieldName || typeof fieldName !== 'string') {
+        throw new NodeOperationError(
+          ctx.getNode(),
+          `Invalid carousel media array field name at item index ${itemIndex}. Field name must be a non-empty string.`,
+          { itemIndex },
+        );
+      }
+
+      const mediaTypeMode = ctx.getNodeParameter(
+        'carouselMediaArrayType',
+        itemIndex,
+        'auto',
+      ) as string;
+
+      const itemJson = items[itemIndex]?.json as IDataObject;
+      const rawArray = resolveFieldPath(itemJson, fieldName);
+
+      if (!Array.isArray(rawArray)) {
+        throw new NodeOperationError(
+          ctx.getNode(),
+          `Invalid carousel media array at item index ${itemIndex}. The field "${fieldName}" must contain an array.`,
+          { itemIndex },
+        );
+      }
+
+      const toMediaItem = (entry: unknown, index: number) => {
+        const label = `carousel media array item at index ${index}`;
+        let url: string | undefined;
+        let mediaType: 'image' | 'video';
+
+        const decideTypeFromUrl = (candidateUrl: string): 'image' | 'video' => {
+          const lower = candidateUrl.toLowerCase();
+          const videoExtPattern = /\.(mp4|mov|m4v|webm)$/;
+          if (videoExtPattern.test(lower)) return 'video';
+          return 'image';
+        };
+
+        if (typeof entry === 'string') {
+          url = entry;
+          if (!url) {
+            throw new NodeOperationError(
+              ctx.getNode(),
+              `Empty URL in ${label}. URLs must be non-empty strings.`,
+              { itemIndex },
+            );
+          }
+
+          if (mediaTypeMode === 'image' || mediaTypeMode === 'video') {
+            mediaType = mediaTypeMode;
+          } else {
+            mediaType = decideTypeFromUrl(url);
+          }
+        } else if (entry && typeof entry === 'object') {
+          const obj = entry as IDataObject;
+          const candidateUrl = (obj.url ?? obj.src ?? obj.imageUrl ?? obj.videoUrl) as
+            string | undefined;
+
+          if (!candidateUrl || typeof candidateUrl !== 'string') {
+            throw new NodeOperationError(
+              ctx.getNode(),
+              `Missing or invalid URL in ${label}. Expected a property like "url", "src", "imageUrl", or "videoUrl".`,
+              { itemIndex },
+            );
+          }
+
+          url = candidateUrl;
+
+          const explicitType = String(obj.mediaType ?? obj.type ?? '').toLowerCase();
+          const isExplicitVideo = explicitType === 'video';
+          const isExplicitImage = explicitType === 'image';
+
+          if (mediaTypeMode === 'image' || mediaTypeMode === 'video') {
+            mediaType = mediaTypeMode;
+          } else if (isExplicitVideo || isExplicitImage) {
+            mediaType = isExplicitVideo ? 'video' : 'image';
+          } else {
+            mediaType = decideTypeFromUrl(url);
+          }
+        } else {
+          throw new NodeOperationError(
+            ctx.getNode(),
+            `Unsupported entry in ${label}. Each item must be either a string URL or an object containing a URL.`,
+            { itemIndex },
+          );
+        }
+
+        if (mediaType === 'video') {
+          return {
+            mediaType: 'video',
+            videoUrl: url,
+          };
+        }
+
+        return {
+          mediaType: 'image',
+          imageUrl: url,
+        };
+      };
+
+      const mediaItemArray = rawArray.map((entry, index) => toMediaItem(entry, index));
+
+      carouselMedia = {
+        mediaItem: mediaItemArray,
+      };
+    } else {
+      try {
+        carouselMedia = ctx.getNodeParameter('carouselMedia', itemIndex, {
+          mediaItem: [],
+        }) as {
+          mediaItem?: Array<{
+            mediaType: string;
+            imageUrl?: string;
+            videoUrl?: string;
+          }>;
+        };
+        if (!carouselMedia || typeof carouselMedia !== 'object') {
+          throw new NodeOperationError(
+            ctx.getNode(),
+            `Invalid carousel media parameter at item index ${itemIndex}. Carousel media must be an object.`,
+            { itemIndex },
+          );
+        }
+      } catch (error) {
+        if (error instanceof NodeOperationError) {
+          throw toNodeError(ctx.getNode(), error);
+        }
+        throw new NodeOperationError(
+          ctx.getNode(),
+          `Failed to get carousel media parameter at item index ${itemIndex}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+          { itemIndex },
+        );
+      }
+    }
+
+    const mediaItems = carouselMedia?.mediaItem ?? [];
+    if (!Array.isArray(mediaItems)) {
+      throw new NodeOperationError(
+        ctx.getNode(),
+        `Invalid carousel media items format at item index ${itemIndex}. Media items must be an array.`,
+        { itemIndex },
+      );
+    }
+
+    if (mediaItems.length < 2 || mediaItems.length > 10) {
+      throw new NodeOperationError(
+        ctx.getNode(),
+        `Carousel must have between 2 and 10 media items. Found ${mediaItems.length} items at item index ${itemIndex}.`,
+        { itemIndex },
+      );
+    }
+
+    // Simplified media item processing
+    const childIds: string[] = [];
+    const mediaUri = `https://${hostUrl}/${graphApiVersion}/${node}/media`;
+
+    for (let i = 0; i < mediaItems.length; i++) {
+      const item = mediaItems[i];
+      if (!item || typeof item !== 'object') {
+        throw new NodeOperationError(
+          ctx.getNode(),
+          `Invalid carousel media item at index ${i} at item index ${itemIndex}.`,
+          { itemIndex },
+        );
+      }
+
+      // Validate media type
+      if (!item.mediaType || typeof item.mediaType !== 'string') {
+        throw new NodeOperationError(
+          ctx.getNode(),
+          `Carousel item ${i + 1}: Media type is required and must be 'image' or 'video'.`,
+          { itemIndex },
+        );
+      }
+      if (item.mediaType !== 'image' && item.mediaType !== 'video') {
+        throw new NodeOperationError(
+          ctx.getNode(),
+          `Carousel item ${i + 1}: Invalid media type '${item.mediaType}'. Must be 'image' or 'video'.`,
+          { itemIndex },
+        );
+      }
+
+      // Get URL based on media type
+      const url =
+        item.mediaType === 'video' ? (item.videoUrl ?? '').trim() : (item.imageUrl ?? '').trim();
+
+      if (!url || typeof url !== 'string') {
+        throw new NodeOperationError(
+          ctx.getNode(),
+          `Carousel item ${i + 1}: ${item.mediaType === 'video' ? 'Video' : 'Image'} URL is required and must be a non-empty string.`,
+          { itemIndex },
+        );
+      }
+
+      // Create child container
+      const childQs: IDataObject =
+        item.mediaType === 'video'
+          ? { media_type: 'VIDEO', video_url: url, is_carousel_item: true }
+          : { image_url: url, is_carousel_item: true };
+
+      try {
+        const childResponse = await ctx.helpers.httpRequestWithAuthentication.call(
+          ctx,
+          'instagramApi',
+          {
+            headers: { accept: 'application/json,text/*;q=0.99' },
+            method: 'POST',
+            url: mediaUri,
+            qs: childQs,
+            json: true,
+          } as IHttpRequestOptions,
+        );
+
+        const childId = childResponse.id as string | undefined;
+        if (!childId || typeof childId !== 'string') {
+          throw new NodeOperationError(
+            ctx.getNode(),
+            `Carousel item ${i + 1}: Container creation did not return a valid ID.`,
+            { itemIndex },
+          );
+        }
+
+        // Wait for container to be ready
+        await waitForContainerReady(ctx, {
+          creationId: childId,
+          hostUrl,
+          graphApiVersion,
+          itemIndex,
+          pollIntervalMs: 60_000,
+          maxTotalTimeMs: 5 * 60 * 1000,
+        });
+
+        childIds.push(childId);
+      } catch (err) {
+        throw new NodeOperationError(
+          ctx.getNode(),
+          `Carousel item ${i + 1}: ${err instanceof Error ? err.message : String(err)}`,
+          { itemIndex },
+        );
+      }
+    }
+
+    // Create carousel container
+    const carouselQs: IDataObject = {
+      media_type: 'CAROUSEL',
+      children: childIds.join(','),
+      caption,
+    };
+
+    let carouselResponse: IDataObject;
+    try {
+      carouselResponse = await ctx.helpers.httpRequestWithAuthentication.call(ctx, 'instagramApi', {
+        headers: { accept: 'application/json,text/*;q=0.99' },
+        method: 'POST',
+        url: mediaUri,
+        qs: carouselQs,
+        json: true,
+      } as IHttpRequestOptions);
+    } catch (err) {
+      throw new NodeOperationError(
+        ctx.getNode(),
+        `Carousel container creation: ${err instanceof Error ? err.message : String(err)}`,
+        { itemIndex },
+      );
+    }
+
+    const carouselContainerId = carouselResponse.id as string | undefined;
+    if (!carouselContainerId || typeof carouselContainerId !== 'string') {
+      throw new NodeOperationError(
+        ctx.getNode(),
+        `Carousel container creation did not return a valid ID.`,
+        { itemIndex },
+      );
+    }
+
+    // Wait for carousel container to be ready
+    let containerReadyResult;
+    try {
+      containerReadyResult = await waitForContainerReady(ctx, {
+        creationId: carouselContainerId,
+        hostUrl,
+        graphApiVersion,
+        itemIndex,
+        pollIntervalMs: 60_000,
+        maxTotalTimeMs: 5 * 60 * 1000,
+      });
+    } catch (err) {
+      throw new NodeOperationError(
+        ctx.getNode(),
+        `Carousel container ready: ${err instanceof Error ? err.message : String(err)}`,
+        { itemIndex },
+      );
+    }
+
+    // Publish carousel
+    const publishUri = `https://${hostUrl}/${graphApiVersion}/${node}/media_publish`;
+    const publishQuery: IDataObject = { creation_id: carouselContainerId };
+    const publishOptions: IHttpRequestOptions = {
+      headers: { accept: 'application/json,text/*;q=0.99' },
+      method: 'POST',
+      url: publishUri,
+      qs: { ...publishQuery },
+      json: true,
+    };
+
+    let publishResponse: IDataObject;
+    try {
+      publishResponse = await ctx.helpers.httpRequestWithAuthentication.call(
+        ctx,
+        'instagramApi',
+        publishOptions,
+      );
+    } catch (err) {
+      throw new NodeOperationError(
+        ctx.getNode(),
+        `Carousel publish: ${err instanceof Error ? err.message : String(err)} (container ${carouselContainerId})`,
+        { itemIndex },
+      );
+    }
+
+    returnItems.push({
+      json: {
+        ...publishResponse,
+        instagramPublishProgress: containerReadyResult,
+      },
+      pairedItem: { item: itemIndex },
+    });
+    return;
+  } catch (error) {
+    ctx.logger.error(
+      `Instagram carousel operation failed: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+
+    if (!ctx.continueOnFail()) {
+      throw error instanceof NodeApiError
+        ? error
+        : new NodeApiError(ctx.getNode(), error as JsonObject);
+    }
+    type GraphError = {
+      message?: string;
+      code?: number;
+      error_subcode?: number;
+    };
+    type ErrorWithGraph = {
+      response?: {
+        body?: { error?: GraphError };
+        headers?: IDataObject;
+      };
+      statusCode?: number;
+    };
+    const errorWithGraph = error as ErrorWithGraph;
+    const errorItem =
+      errorWithGraph.response !== undefined
+        ? {
+            statusCode: errorWithGraph.statusCode,
+            ...(errorWithGraph.response.body?.error ?? {}),
+            headers: errorWithGraph.response.headers,
+          }
+        : (error as IDataObject);
+    const contextMessage =
+      error instanceof Error ? error.message : String((error as IDataObject).message ?? error);
+    returnItems.push({
+      json: { ...errorItem, carouselErrorContext: contextMessage },
+      pairedItem: { item: itemIndex },
+    });
+    return;
+  }
+
+  return;
+}

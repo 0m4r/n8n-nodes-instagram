@@ -106,7 +106,10 @@ describe('Instagram node request contracts', () => {
       expect.objectContaining({
         method: 'POST',
         url: 'https://graph.instagram.com/v26.0/account-1/messages',
-        body: { recipient: { comment_id: 'comment-1' }, message: { text: 'Thanks for commenting!' } },
+        body: {
+          recipient: { comment_id: 'comment-1' },
+          message: { text: 'Thanks for commenting!' },
+        },
       }),
     ]);
   });
@@ -132,7 +135,10 @@ describe('Instagram node request contracts', () => {
       expect.objectContaining({
         method: 'POST',
         url: 'https://graph.facebook.com/v26.0/account-1/messages',
-        body: { recipient: { comment_id: 'comment-1' }, message: { text: 'Thanks for commenting!' } },
+        body: {
+          recipient: { comment_id: 'comment-1' },
+          message: { text: 'Thanks for commenting!' },
+        },
       }),
     ]);
   });
@@ -152,6 +158,74 @@ describe('Instagram node request contracts', () => {
       url: 'https://graph.instagram.com/v25.0/me',
       qs: { fields: 'id,username,account_type,media_count' },
     });
+  });
+
+  it('routes IG User profile requests through the resource handler map', async () => {
+    const { context, requests } = createExecuteContext(
+      {
+        resource: 'igUser',
+        operation: 'get',
+        graphApiVersion: 'v26.0',
+        node: 'ig-user-1',
+      },
+      { id: 'ig-user-1', username: 'creator' },
+    );
+
+    await expect(new Instagram().execute.call(context)).resolves.toEqual([
+      [{ json: { id: 'ig-user-1', username: 'creator' }, pairedItem: { item: 0 } }],
+    ]);
+    expect(requests[0]).toMatchObject({
+      method: 'GET',
+      url: 'https://graph.facebook.com/v26.0/ig-user-1',
+      qs: {
+        fields:
+          'id,username,name,biography,website,media_count,followers_count,follows_count,profile_picture_url',
+      },
+    });
+  });
+
+  it('routes hashtag searches through the hashtag resource handler', async () => {
+    const { context, requests } = createExecuteContext(
+      {
+        resource: 'igHashtag',
+        operation: 'search',
+        graphApiVersion: 'v26.0',
+        node: 'ig-user-1',
+        hashtagName: 'travel',
+      },
+      { data: [{ id: 'hashtag-1' }] },
+    );
+
+    await expect(new Instagram().execute.call(context)).resolves.toEqual([
+      [{ json: { data: [{ id: 'hashtag-1' }] }, pairedItem: { item: 0 } }],
+    ]);
+    expect(requests[0]).toMatchObject({
+      method: 'GET',
+      url: 'https://graph.facebook.com/v26.0/ig_hashtag_search',
+      qs: { user_id: 'ig-user-1', q: 'travel' },
+    });
+  });
+
+  it('routes carousel publish requests to carousel-specific validation', async () => {
+    const { context, requests } = createExecuteContext(
+      { resource: 'carousel', operation: 'publish' },
+      {},
+    );
+
+    await expect(new Instagram().execute.call(context)).rejects.toThrow(
+      'Failed to get node parameter at item index 0',
+    );
+    expect(requests).toHaveLength(0);
+  });
+
+  it('does not route carousel operations other than publish to the carousel handler', async () => {
+    const { context, requests } = createExecuteContext(
+      { resource: 'carousel', operation: 'unsupported' },
+      {},
+    );
+
+    await expect(new Instagram().execute.call(context)).rejects.toThrow(/Unsupported operation/);
+    expect(requests).toHaveLength(0);
   });
 
   it('retrieves the Instagram account connected to a Facebook page', async () => {
