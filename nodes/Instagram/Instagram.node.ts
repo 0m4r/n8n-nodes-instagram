@@ -20,7 +20,7 @@ const toNodeError = (node: ConstructorParameters<typeof NodeApiError>[0], error:
 
 export class Instagram implements INodeType {
   description: INodeTypeDescription = {
-    displayName: 'Instagram (0m4r)',
+    displayName: 'Instagram',
     name: 'instagram',
     icon: { light: 'file:instagram.svg', dark: 'file:instagram.dark.svg' },
     group: ['transform'],
@@ -28,7 +28,7 @@ export class Instagram implements INodeType {
     subtitle: '={{$parameter["operation"]}}',
     description: 'Publish media to Instagram using Instagram or Facebook Graph API',
     defaults: {
-      name: 'Instagram (0m4r)',
+      name: 'Instagram',
     },
     usableAsTool: true,
     inputs: [NodeConnectionTypes.Main],
@@ -346,13 +346,13 @@ export class Instagram implements INodeType {
         required: true,
       },
       {
-        displayName: 'Account',
+        displayName: 'Instagram Account ID',
         name: 'node',
         type: 'resourceLocator',
         default: { mode: 'list', value: '' },
         required: true,
         description:
-          'The Instagram Business Account ID or User ID on which to publish the media, or the professional account that owns the commented media, or the IG User to read data for, or the IG User performing a hashtag or messaging query',
+          'The Instagram Business Account ID or User ID (IGSID) on which to publish the media, or the professional account that owns the commented media, or the IG User to read data for, or the IG User performing a hashtag or messaging query. Not an n8n workflow node.',
         displayOptions: {
           show: {
             resource: [
@@ -1041,6 +1041,7 @@ export class Instagram implements INodeType {
       pollingDurationSeconds: number;
       pollIntervalMs: number;
       maxTotalTimeMs: number;
+      maxPollAttempts: number;
       pollCount: number;
     };
 
@@ -1051,6 +1052,7 @@ export class Instagram implements INodeType {
       itemIndex,
       pollIntervalMs = 60_000,
       maxTotalTimeMs = 5 * 60 * 1000,
+      maxPollAttempts = Infinity,
     }: {
       creationId: string;
       hostUrl: string;
@@ -1058,6 +1060,7 @@ export class Instagram implements INodeType {
       itemIndex: number;
       pollIntervalMs?: number;
       maxTotalTimeMs?: number;
+      maxPollAttempts?: number;
     }): Promise<ContainerReadyResult> => {
       if (!creationId || typeof creationId !== 'string') {
         throw new NodeOperationError(
@@ -1109,6 +1112,14 @@ export class Instagram implements INodeType {
 
       while (Date.now() < deadline) {
         pollCount++;
+
+        if (pollCount > maxPollAttempts) {
+          throw new NodeOperationError(
+            this.getNode(),
+            `Container ${creationId} not ready after ${maxPollAttempts} poll attempts. Last status: ${lastStatusCode ?? 'unknown'}.`,
+            { itemIndex },
+          );
+        }
 
         try {
           const statusResponse = (await this.helpers.httpRequestWithAuthentication.call(
@@ -1166,15 +1177,13 @@ export class Instagram implements INodeType {
                 : undefined;
 
             this.logger.error(
-              `Instagram: container ${creationId} failed with status ${authoritativeStatus} on poll ${pollCount}. ${
-                statusError ? `Details: ${statusError}` : ''
+              `Instagram: container ${creationId} failed with status ${authoritativeStatus} on poll ${pollCount}. ${statusError ? `Details: ${statusError}` : ''
               }`,
             );
 
             throw new NodeOperationError(
               this.getNode(),
-              `Instagram container failed. Container ID: ${creationId}. Authoritative status: ${authoritativeStatus}. Poll attempt: ${pollCount}. ${
-                statusError ? `Error details: ${statusError}.` : ''
+              `Instagram container failed. Container ID: ${creationId}. Authoritative status: ${authoritativeStatus}. Poll attempt: ${pollCount}. ${statusError ? `Error details: ${statusError}.` : ''
               }`,
               { itemIndex },
             );
@@ -1192,6 +1201,7 @@ export class Instagram implements INodeType {
               pollingDurationSeconds: elapsedSeconds,
               pollIntervalMs,
               maxTotalTimeMs,
+              maxPollAttempts,
               pollCount,
             };
           }
@@ -1234,23 +1244,20 @@ export class Instagram implements INodeType {
 
           if (isFatalRequestError || consecutiveErrors >= maxConsecutiveErrors) {
             this.logger.error(
-              `Instagram: failed to poll container ${creationId}. Last status: ${
-                lastStatusCode ?? 'unknown'
+              `Instagram: failed to poll container ${creationId}. Last status: ${lastStatusCode ?? 'unknown'
               }. Error: ${error instanceof Error ? error.message : String(error)}`,
             );
 
             throw new NodeOperationError(
               this.getNode(),
-              `Failed to poll Instagram container status. Container ID: ${creationId}. Last status: ${
-                lastStatusCode ?? 'unknown'
+              `Failed to poll Instagram container status. Container ID: ${creationId}. Last status: ${lastStatusCode ?? 'unknown'
               }. Last error: ${error instanceof Error ? error.message : String(error)}`,
               { itemIndex },
             );
           }
 
           this.logger.warn(
-            `Instagram: transient error while polling container ${creationId} (${consecutiveErrors}/${maxConsecutiveErrors}): ${
-              error instanceof Error ? error.message : String(error)
+            `Instagram: transient error while polling container ${creationId} (${consecutiveErrors}/${maxConsecutiveErrors}): ${error instanceof Error ? error.message : String(error)
             }`,
           );
 
@@ -1262,21 +1269,16 @@ export class Instagram implements INodeType {
       const elapsedSeconds = Math.round((Date.now() - startTime) / 1000);
 
       this.logger.error(
-        `Instagram: timed out waiting for container ${creationId} after ${elapsedSeconds}s. Last status: ${
-          lastStatusCode ?? 'unknown'
+        `Instagram: timed out waiting for container ${creationId} after ${elapsedSeconds}s. Last status: ${lastStatusCode ?? 'unknown'
         }.`,
       );
 
       throw new NodeOperationError(
         this.getNode(),
-        `Timed out waiting for Instagram container after ${
-          maxTotalTimeMs / 1000
-        } seconds. Container ID: ${creationId}. Last status code: ${
-          lastStatusCode ?? 'unknown'
-        }. Last status: ${
-          lastStatusMessage ?? 'unknown'
-        }. Polls completed: ${pollCount}. Last polling error: ${
-          lastError instanceof Error ? lastError.message : lastError ? String(lastError) : 'none'
+        `Timed out waiting for Instagram container after ${maxTotalTimeMs / 1000
+        } seconds. Container ID: ${creationId}. Last status code: ${lastStatusCode ?? 'unknown'
+        }. Last status: ${lastStatusMessage ?? 'unknown'
+        }. Polls completed: ${pollCount}. Last polling error: ${lastError instanceof Error ? lastError.message : lastError ? String(lastError) : 'none'
         }.`,
         { itemIndex },
       );
@@ -1388,7 +1390,7 @@ export class Instagram implements INodeType {
             if (!accountId || typeof accountId !== 'string') {
               throw new NodeOperationError(
                 this.getNode(),
-                `Invalid or missing account ID (node) parameter at item index ${itemIndex}. Account ID must be a non-empty string.`,
+                `Invalid or missing Instagram Account ID parameter at item index ${itemIndex}. Account ID must be a non-empty string.`,
                 { itemIndex },
               );
             }
@@ -1398,7 +1400,7 @@ export class Instagram implements INodeType {
             }
             throw new NodeOperationError(
               this.getNode(),
-              `Failed to get account ID (node) parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
+              `Failed to get Instagram Account ID parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
               { itemIndex },
             );
           }
@@ -1447,7 +1449,11 @@ export class Instagram implements INodeType {
                 );
               }
 
-              const url = `https://${hostUrl}/${graphApiVersion}/${accountId}/messages`;
+              // NOTE: The Instagram Messaging API is only available on
+              // graph.facebook.com, regardless of the credential's API Endpoint
+              // setting. See:
+              // https://developers.facebook.com/documentation/business-messaging/instagram-messaging/features/send-message
+              const url = `https://graph.facebook.com/${graphApiVersion}/${accountId}/messages`;
 
               const requestOptions: IHttpRequestOptions = {
                 headers: {
@@ -2037,8 +2043,7 @@ export class Instagram implements INodeType {
                 }
                 throw new NodeOperationError(
                   this.getNode(),
-                  `Failed to get carousel media parameter at item index ${itemIndex}: ${
-                    error instanceof Error ? error.message : String(error)
+                  `Failed to get carousel media parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)
                   }`,
                   { itemIndex },
                 );
@@ -2246,8 +2251,7 @@ export class Instagram implements INodeType {
             continue;
           } catch (error) {
             this.logger.error(
-              `Instagram carousel operation failed: ${
-                error instanceof Error ? error.message : String(error)
+              `Instagram carousel operation failed: ${error instanceof Error ? error.message : String(error)
               }`,
             );
 
@@ -2272,10 +2276,10 @@ export class Instagram implements INodeType {
             const errorItem =
               errorWithGraph.response !== undefined
                 ? {
-                    statusCode: errorWithGraph.statusCode,
-                    ...(errorWithGraph.response.body?.error ?? {}),
-                    headers: errorWithGraph.response.headers,
-                  }
+                  statusCode: errorWithGraph.statusCode,
+                  ...(errorWithGraph.response.body?.error ?? {}),
+                  headers: errorWithGraph.response.headers,
+                }
                 : (error as IDataObject);
             const contextMessage =
               error instanceof Error
@@ -2323,7 +2327,7 @@ export class Instagram implements INodeType {
             if (!accountId || typeof accountId !== 'string') {
               throw new NodeOperationError(
                 this.getNode(),
-                `Invalid or missing account ID (node) parameter at item index ${itemIndex}. Account ID must be a non-empty string.`,
+                `Invalid or missing Instagram Account ID parameter at item index ${itemIndex}. Account ID must be a non-empty string.`,
                 { itemIndex },
               );
             }
@@ -2333,7 +2337,7 @@ export class Instagram implements INodeType {
             }
             throw new NodeOperationError(
               this.getNode(),
-              `Failed to get account ID (node) parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
+              `Failed to get Instagram Account ID parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
               { itemIndex },
             );
           }
@@ -2555,8 +2559,8 @@ export class Instagram implements INodeType {
 
                 const paging = response.paging as
                   | {
-                      cursors?: { after?: string };
-                    }
+                    cursors?: { after?: string };
+                  }
                   | undefined;
                 after = paging?.cursors?.after;
 
@@ -2777,7 +2781,7 @@ export class Instagram implements INodeType {
             if (!accountId || typeof accountId !== 'string') {
               throw new NodeOperationError(
                 this.getNode(),
-                `Invalid or missing account ID (node) parameter at item index ${itemIndex}. Account ID must be a non-empty string.`,
+                `Invalid or missing Instagram Account ID parameter at item index ${itemIndex}. Account ID must be a non-empty string.`,
                 { itemIndex },
               );
             }
@@ -2787,7 +2791,7 @@ export class Instagram implements INodeType {
             }
             throw new NodeOperationError(
               this.getNode(),
-              `Failed to get account ID (node) parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
+              `Failed to get Instagram Account ID parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
               { itemIndex },
             );
           }
@@ -2973,8 +2977,8 @@ export class Instagram implements INodeType {
 
                 const paging = response.paging as
                   | {
-                      cursors?: { after?: string };
-                    }
+                    cursors?: { after?: string };
+                  }
                   | undefined;
                 after = paging?.cursors?.after;
 
@@ -3330,7 +3334,7 @@ export class Instagram implements INodeType {
                 if (!accountId || typeof accountId !== 'string') {
                   throw new NodeOperationError(
                     this.getNode(),
-                    `Invalid or missing account ID (node) parameter at item index ${itemIndex}. Account ID must be a non-empty string.`,
+                    `Invalid or missing Instagram Account ID parameter at item index ${itemIndex}. Account ID must be a non-empty string.`,
                     { itemIndex },
                   );
                 }
@@ -3340,7 +3344,7 @@ export class Instagram implements INodeType {
                 }
                 throw new NodeOperationError(
                   this.getNode(),
-                  `Failed to get account ID (node) parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
+                  `Failed to get Instagram Account ID parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
                   { itemIndex },
                 );
               }
@@ -3385,7 +3389,11 @@ export class Instagram implements INodeType {
                 );
               }
 
-              const url = `https://${hostUrl}/${graphApiVersion}/${accountId}/messages`;
+              // NOTE: The Instagram Messaging API (including private replies to
+              // comments) is only available on graph.facebook.com, regardless of
+              // the credential's API Endpoint setting. See:
+              // https://developers.facebook.com/documentation/instagram-platform/private-replies
+              const url = `https://graph.facebook.com/${graphApiVersion}/${accountId}/messages`;
 
               const requestOptions: IHttpRequestOptions = {
                 headers: {
@@ -3928,8 +3936,9 @@ export class Instagram implements INodeType {
             hostUrl,
             graphApiVersion,
             itemIndex,
-            pollIntervalMs: 60_000,
+            pollIntervalMs: handler.pollIntervalMs,
             maxTotalTimeMs: 5 * 60 * 1000,
+            maxPollAttempts: handler.maxPollAttempts,
           });
         } catch (error) {
           if (error instanceof NodeOperationError) {

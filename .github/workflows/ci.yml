@@ -1,37 +1,45 @@
 name: CI
+
 permissions:
   contents: read
 
 on:
+  workflow_dispatch:  # Manual trigger
   pull_request:
   push:
     branches-ignore:
       - main
 
+# Cancel in-progress runs when a new run is triggered on the same branch/PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 720
+    timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Use Node.js
-        uses: actions/setup-node@v7
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version-file: ".nvmrc"
           registry-url: "https://registry.npmjs.org"
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install dependencies
         run: npm install
-          
+
       - name: Test
         run: npm test
-        
+
       - name: Typecheck
         run: npm run typecheck
-          
+
       - name: Lint
         run: npm run lint
 

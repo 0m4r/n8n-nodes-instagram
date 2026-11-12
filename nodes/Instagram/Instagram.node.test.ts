@@ -85,6 +85,32 @@ describe('Instagram node request contracts', () => {
     ]);
   });
 
+  it('sends a private reply to a comment on graph.facebook.com regardless of API endpoint', async () => {
+    const { context, requests } = createExecuteContext(
+      {
+        resource: 'comments',
+        operation: 'sendPrivateReply',
+        graphApiVersion: 'v26.0',
+        node: 'account-1',
+        commentId: 'comment-1',
+        privateReplyText: 'Thanks for commenting!',
+      },
+      { recipient_id: 'scoped-1', message_id: 'message-1' },
+      'graph.instagram.com',
+    );
+
+    await expect(new Instagram().execute.call(context)).resolves.toEqual([
+      [{ json: { recipient_id: 'scoped-1', message_id: 'message-1' }, pairedItem: { item: 0 } }],
+    ]);
+    expect(requests).toEqual([
+      expect.objectContaining({
+        method: 'POST',
+        url: 'https://graph.facebook.com/v26.0/account-1/messages',
+        body: { recipient: { comment_id: 'comment-1' }, message: { text: 'Thanks for commenting!' } },
+      }),
+    ]);
+  });
+
   it('uses the selected Graph version and Instagram fields for Get Me', async () => {
     const { context, requests } = createExecuteContext(
       { resource: 'auth', operation: 'getMe', graphApiVersion: 'v25.0' },

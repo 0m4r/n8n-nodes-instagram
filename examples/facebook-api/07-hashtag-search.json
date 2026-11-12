@@ -1,0 +1,99 @@
+{
+  "name": "07 Search Hashtags & Get Media",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "interval": 24
+            }
+          ]
+        }
+      },
+      "id": "cron-1",
+      "name": "Daily Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "igHashtag",
+        "operation": "search",
+        "hashtagName": "n8n",
+        "graphApiVersion": "v26.0"
+      },
+      "id": "instagram-1",
+      "name": "Search Hashtag",
+      "type": "@0m4r/n8n-nodes-instagram.instagram",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ],
+      "credentials": {
+        "instagramApi": {
+          "id": "1",
+          "name": "Instagram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "igHashtag",
+        "operation": "getTopMedia",
+        "hashtagId": "={{ $json.id }}",
+        "graphApiVersion": "v26.0",
+        "returnAll": false,
+        "limit": 20
+      },
+      "id": "instagram-2",
+      "name": "Get Top Media",
+      "type": "@0m4r/n8n-nodes-instagram.instagram",
+      "typeVersion": 1,
+      "position": [
+        680,
+        300
+      ],
+      "credentials": {
+        "instagramApi": {
+          "id": "1",
+          "name": "Instagram API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily Schedule": {
+      "main": [
+        [
+          {
+            "node": "Search Hashtag",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Hashtag": {
+      "main": [
+        [
+          {
+            "node": "Get Top Media",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "workflow-hashtag-search",
+  "tags": []
+}

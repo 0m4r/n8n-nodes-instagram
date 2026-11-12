@@ -1,0 +1,84 @@
+{
+  "name": "08 Send Instagram Direct Message",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "send-dm",
+        "responseMode": "onReceived",
+        "responseData": "={{ $json }}"
+      },
+      "id": "webhook-1",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": "1.1",
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "messaging",
+        "operation": "sendMessage",
+        "node": {
+          "mode": "id",
+          "id": "YOUR_IG_USER_ID"
+        },
+        "graphApiVersion": "v26.0",
+        "recipientId": "={{ $json.recipientId }}",
+        "messageText": "={{ $json.message || 'Hello from n8n!' }}"
+      },
+      "id": "instagram-1",
+      "name": "Send Message",
+      "type": "@0m4r/n8n-nodes-instagram.instagram",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "responseBody": "={{ JSON.stringify({ success: true, messageId: $json.id }) }}",
+        "responseCode": 200
+      },
+      "id": "respond-1",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": "1.1",
+      "position": [
+        680,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Message": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "workflow-send-direct-message",
+  "tags": []
+}
