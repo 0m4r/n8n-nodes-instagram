@@ -11,10 +11,13 @@
     ],
     "primaryDocumentation": [
       {
-        "url": "https://developers.facebook.com/docs/graph-api/webhooks/getting-started"
+        "url": "https://developers.facebook.com/documentation/instagram-platform/webhooks"
       },
       {
-        "url": "https://developers.facebook.com/docs/graph-api/webhooks/reference/instagram"
+        "url": "https://developers.facebook.com/documentation/instagram-platform/webhooks/fields"
+      },
+      {
+        "url": "https://developers.facebook.com/docs/graph-api/webhooks/getting-started"
       }
     ]
   }

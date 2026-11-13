@@ -96,30 +96,43 @@ For the **Instagram Trigger** node, create an **Instagram Webhook API** credenti
 
 ## Instagram Webhook Trigger
 
-This package’s Instagram nodes for n8n let you publish and manage content, moderate comments, send DMs, and react to real-time events (comments, messages, mentions, story insights, etc.) on Instagram Business and Creator accounts via the Facebook/Instagram Graph API.
+The **Instagram Trigger** receives Meta webhook notifications and starts a workflow for each included event. For direct messages with **Instagram Login** (`graph.instagram.com`), follow Meta's Instagram Platform Webhooks setup. This flow uses an Instagram User access token to subscribe the professional account to webhook fields; it does not use a Facebook Page access token.
 
-The **Instagram Trigger** node listens for real-time webhook events from Meta and starts a workflow when an event is received.
+### Requirements
+
+- The Instagram account must be a **Business or Creator (professional) account**, and must authorize your app.
+- For Instagram Login, request `instagram_business_basic` and `instagram_business_manage_messages` to receive the `messages` field. The app needs **Advanced Access** for production use and the business must be verified. The app must be Live/published to receive notifications from app users; in development, delivery is limited to eligible app roles/testers.
+- Meta must be able to reach the callback URL over **HTTPS** with a valid TLS certificate. Self-signed certificates are not supported.
+- Subscribe to fields in **both** places: select them for your app in the Meta App Dashboard, then enable notifications on each Instagram professional account using that account's token. Account subscription applies the fields selected for the app; it does not select a different field set per account.
+
+These requirements and the permissions for other webhook fields vary by API setup and field. See Meta's [Instagram Webhooks setup and requirements](https://developers.facebook.com/documentation/instagram-platform/webhooks) and [field/permission matrix](https://developers.facebook.com/documentation/instagram-platform/webhooks/fields).
 
 ### Setup
 
-1. **Create the credential**
-   Add an **Instagram Webhook API** credential and enter your Meta **App Secret** (from your app’s Settings → Basic in the Meta App Dashboard).
+1. **Configure the trigger in n8n**
+   Add the **Instagram Trigger** node. Set **Verify Token** to a random string; you will enter the same value in Meta. Add an **Instagram Webhook API** credential containing your Meta **App Secret** (App Dashboard → App settings → Basic). The App Secret is used to validate webhook signatures; it is not an access token.
 
-2. **Add the trigger to your workflow**
-   Add the **Instagram Trigger** node. Set **Verify Token** to any string you will use in the Meta Dashboard (e.g. a random secret). Copy the **Webhook URL** shown in the node (Production or Test URL).
+2. **Configure the app-level callback and fields in Meta**
+   In the Meta App Dashboard, open your Instagram API setup's **Webhooks** configuration. Add the n8n callback URL and the matching Verify Token. Use the **Production URL** for an active workflow, or the **Test URL** while the workflow is listening for a test event. Verify the callback, then subscribe the app to `messages` (and any other fields you need).
 
-3. **Configure Webhooks in Meta App Dashboard**
-   - In [Meta for Developers](https://developers.facebook.com/), open your app and go to **Webhooks** (or add the Webhooks product).
-   - For **Instagram**, set:
-     - **Callback URL**: paste the n8n Webhook URL from the trigger node.
-     - **Verify Token**: the same string you set in the node’s **Verify Token** parameter.
-   - Subscribe to the Instagram fields you need (e.g. `comments`, `messages`, `mentions`, `story_insights`).
-   - Save. Meta will send a GET request to your URL; the node responds with the challenge so verification succeeds.
+3. **Enable notifications on each Instagram account**
+   For Instagram Login, make a `POST` to the professional account's `subscribed_apps` edge using its Instagram User access token. Set `subscribed_fields` to the fields selected for the app. For example, to receive DMs:
+
+   ```bash
+   curl -i -X POST \
+     "https://graph.instagram.com/v{api-version}/{IG_USER_ID}/subscribed_apps" \
+     -d "subscribed_fields=messages" \
+     -d "access_token={INSTAGRAM_USER_ACCESS_TOKEN}"
+   ```
+
+   A successful response is `{"success":true}`. Use the supported Graph API version for your app. Do not use an Instagram User access token with `graph.facebook.com`, or a Facebook/Page token with `graph.instagram.com`. For Unified Login or Facebook Login, use the matching host, account/Page ID, token type, and permissions in Meta's [setup guide](https://developers.facebook.com/documentation/instagram-platform/webhooks).
 
 4. **Optional: filter events**
-   Use **Events to Include** on the node to pass only selected event types (e.g. only `messages` and `mentions`) to the workflow. If left empty, all received events are output.
+   Use **Events to Include** to pass only selected event types (for DMs, include `messages`). If left empty, all received event types are output. This filter only affects events after Meta has delivered them; it does not create Meta subscriptions.
 
-Each event is output as an item with `object`, `field`, `value`, `id`, `time` and the raw change payload, so you can use the **Instagram** node (e.g. Messaging, Comments) in the same workflow to reply or moderate. To return a custom response to the caller instead of the default 200 OK, add a **Respond to Webhook** node after the trigger.
+Meta verifies the callback with a GET request containing `hub.mode`, `hub.verify_token`, and `hub.challenge`; the node checks the token and returns the challenge. For POST notifications, Meta signs the raw JSON body with the app secret and sends `X-Hub-Signature-256`. The node validates this signature by default and responds to accepted events with HTTP 200. Meta retries failed deliveries, so keep signature verification enabled and avoid slow downstream work before acknowledging events.
+
+Each accepted event is output as an item with `object`, `field`, `value`, `id`, `time`, and the event payload. Use the **Instagram** node (for example, Messaging or Comments) in the same workflow to act on it.
 
 ## Compatibility
 
