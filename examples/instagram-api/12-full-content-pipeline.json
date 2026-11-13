@@ -32,7 +32,7 @@
         "operation": "publish",
         "node": {
           "mode": "id",
-          "id": "={{ $json.id }}"
+          "value": "={{ $json.id }}"
         },
         "graphApiVersion": "v26.0",
         "imageUrl": "={{ $json.imageUrl }}",

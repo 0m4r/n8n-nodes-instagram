@@ -13,7 +13,7 @@ This workflow publishes a Story to Instagram when an HTTP webhook is called. It'
 - **Resource:** `Story`
 - **Operation:** `Publish`
 - Story media container → publish flow with polling
-- Dynamic inputs from webhook request body (`videoUrl`, `caption`)
+- Dynamic video URL from webhook request body (`videoUrl`)
 - HTTP response with the published story ID
 
 ## Trigger
@@ -34,8 +34,7 @@ After importing and activating the workflow, copy the webhook URL from the **Web
 curl -X POST "https://your-n8n-instance.com/webhook/publish-story" \
   -H "Content-Type: application/json" \
   -d '{
-    "videoUrl": "https://example.com/videos/story.mp4",
-    "caption": "Check out my story!"
+    "videoUrl": "https://example.com/videos/story.mp4"
   }'
 ```
 
@@ -46,8 +45,7 @@ curl -X POST "https://your-n8n-instance.com/webhook/publish-story" \
   "url": "={{ $json.webhookUrl }}",
   "method": "POST",
   "json": {
-    "videoUrl": "https://example.com/videos/story.mp4",
-    "caption": "Check out my story!"
+    "videoUrl": "https://example.com/videos/story.mp4"
   }
 }
 ```
@@ -64,8 +62,7 @@ curl -X POST "https://your-n8n-instance.com/webhook/publish-story" \
 3. Send a POST request to that URL with a JSON body like:
    ```json
    {
-     "videoUrl": "https://example.com/videos/story.mp4",
-     "caption": "Check out my story!"
+     "videoUrl": "https://example.com/videos/story.mp4"
    }
    ```
 4. The workflow publishes the story and responds with the story ID.

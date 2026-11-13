@@ -87,7 +87,7 @@ export async function handlePublish(
   }
 
   try {
-    caption = ctx.getNodeParameter('caption', itemIndex) as string;
+    caption = ctx.getNodeParameter('caption', itemIndex, '') as string;
     if (typeof caption !== 'string') {
       throw new NodeOperationError(
         ctx.getNode(),
@@ -125,12 +125,23 @@ export async function handlePublish(
       { itemIndex },
     );
   }
-  const altText = (additionalFields.altText as string) ?? '';
-  const rawLocationId = additionalFields.locationId as string | undefined;
+  const altText = resource === 'image' ? ((additionalFields.altText as string) ?? '') : '';
+  const rawLocationId =
+    resource === 'image' || resource === 'reels'
+      ? (additionalFields.locationId as string | undefined)
+      : undefined;
   const userTagsCollection = additionalFields.userTags as
     { tag?: Array<{ username: string; x?: number; y?: number }> } | undefined;
-  const productTagsCollection = additionalFields.productTags as
-    { tag?: Array<{ product_id: string; x?: number; y?: number }> } | undefined;
+  const productTagsCollection =
+    resource === 'image' || resource === 'reels'
+      ? (additionalFields.productTags as
+          | { tag?: Array<{ product_id: string; x?: number; y?: number }> }
+          | undefined)
+      : undefined;
+  const rawCollaborators =
+    resource === 'image' || resource === 'reels'
+      ? (additionalFields.collaborators as string | undefined)
+      : undefined;
 
   // Graph host remains static; version is configurable by the user
   const httpRequestMethod = 'POST';
@@ -202,10 +213,11 @@ export async function handlePublish(
     }
   }
 
-  const mediaQs: IDataObject = {
-    caption,
-    ...mediaPayload,
-  };
+  const mediaQs: IDataObject = { ...mediaPayload };
+
+  if (resource !== 'stories' && caption.trim()) {
+    mediaQs.caption = caption;
+  }
 
   if (altText) {
     mediaQs.alt_text = altText;
@@ -225,10 +237,18 @@ export async function handlePublish(
         const tagObj: IDataObject = {
           username: tag.username,
         };
-        if (tag.x !== undefined && tag.x !== null) {
+        if (
+          (resource === 'image' || resource === 'stories') &&
+          tag.x !== undefined &&
+          tag.x !== null
+        ) {
           tagObj.x = tag.x;
         }
-        if (tag.y !== undefined && tag.y !== null) {
+        if (
+          (resource === 'image' || resource === 'stories') &&
+          tag.y !== undefined &&
+          tag.y !== null
+        ) {
           tagObj.y = tag.y;
         }
         return tagObj;
@@ -242,16 +262,23 @@ export async function handlePublish(
     Array.isArray(productTagsCollection.tag) &&
     productTagsCollection.tag.length > 0
   ) {
+    if (productTagsCollection.tag.length > 20) {
+      throw new NodeOperationError(
+        ctx.getNode(),
+        'Meta supports up to 20 product tags on a feed image or Reel.',
+        { itemIndex },
+      );
+    }
     const productTags = productTagsCollection.tag
       .filter((tag) => tag.product_id)
       .map((tag) => {
         const tagObj: IDataObject = {
           product_id: tag.product_id,
         };
-        if (tag.x !== undefined && tag.x !== null) {
+        if (resource === 'image' && tag.x !== undefined && tag.x !== null) {
           tagObj.x = tag.x;
         }
-        if (tag.y !== undefined && tag.y !== null) {
+        if (resource === 'image' && tag.y !== undefined && tag.y !== null) {
           tagObj.y = tag.y;
         }
         return tagObj;
@@ -261,18 +288,42 @@ export async function handlePublish(
     }
   }
 
-  const graduationStrategy = additionalFields.trialReelGraduationStrategy as string | undefined;
-  if (graduationStrategy) {
-    if (resource !== 'reels') {
+  if (rawCollaborators) {
+    const collaborators = rawCollaborators
+      .split(',')
+      .map((username) => username.trim().replace(/^@/, ''))
+      .filter(Boolean);
+    if (collaborators.length > 3) {
       throw new NodeOperationError(
         ctx.getNode(),
-        'Trial Reels are only supported for the Reels resource. Remove Trial Reel options or switch the resource to Reels.',
+        'Meta supports up to 3 collaborators per Instagram post.',
         { itemIndex },
       );
     }
+    if (collaborators.length > 0) {
+      mediaQs.collaborators = JSON.stringify(collaborators);
+    }
+  }
+
+  const graduationStrategy =
+    resource === 'reels'
+      ? (additionalFields.trialReelGraduationStrategy as string | undefined)
+      : undefined;
+  if (graduationStrategy) {
     mediaQs.trial_params = JSON.stringify({
       graduation_strategy: graduationStrategy,
     });
+  }
+
+  if (resource === 'reels') {
+    const coverUrl = (additionalFields.coverUrl as string | undefined)?.trim();
+    const audioName = (additionalFields.audioName as string | undefined)?.trim();
+    const thumbOffset = additionalFields.thumbOffset as number | undefined;
+    const shareToFeed = additionalFields.shareToFeed as boolean | undefined;
+    if (coverUrl) mediaQs.cover_url = coverUrl;
+    if (audioName) mediaQs.audio_name = audioName;
+    if (typeof thumbOffset === 'number' && thumbOffset > 0) mediaQs.thumb_offset = thumbOffset;
+    if (typeof shareToFeed === 'boolean') mediaQs.share_to_feed = shareToFeed;
   }
 
   const mediaRequestOptions: IHttpRequestOptions = {

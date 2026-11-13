@@ -2,7 +2,7 @@
 
 ## What it does
 
-This workflow sends a direct message (DM) to an Instagram user when an HTTP webhook is called. It's useful for automated customer support, order confirmations, or welcome messages triggered by external systems.
+This workflow sends a direct message (DM) to an Instagram user when an HTTP webhook is called. It's useful when an external system supplies a recipient ID and message text. Meta requires the recipient to have initiated a conversation with the professional account; this API cannot start a DM to an arbitrary username.
 
 1. **Webhook trigger** — listens for POST requests at `/webhook/send-dm`.
 2. **Instagram node (Messaging / Send Message)** — sends a text DM to the recipient IG User ID specified in the request body.
@@ -56,7 +56,8 @@ curl -X POST "https://your-n8n-instance.com/webhook/send-dm" \
 
 - An **Instagram API** credential (`instagramApi`) configured with a long-lived access token that has messaging permissions.
 - Replace `YOUR_IG_USER_ID` with your Instagram Business/Creator account ID (the sender).
-- The recipient ID is typically obtained from Instagram Messaging webhook events (see `11-trigger-and-reply.json`).
+- The recipient ID must be the recipient's Instagram-scoped ID (IGSID), typically obtained from an eligible Instagram Messaging event/API response (see `11-trigger-and-reply.json`). A username or public profile ID is not a substitute; the API cannot look up an arbitrary username and send it a DM.
+- The recipient must have messaged the professional account first. This endpoint does not support first-contact messages. Follow Meta's messaging permissions and access requirements for the login flow configured in your credential.
 
 ## How to use
 
@@ -73,5 +74,5 @@ curl -X POST "https://your-n8n-instance.com/webhook/send-dm" \
 
 ## Related documentation
 
-- [Instagram Messaging API](https://developers.facebook.com/docs/messenger-platform/instagram/features/)
-- [Messaging webhook events](https://developers.facebook.com/docs/graph-api/webhooks/reference/instagram#fields)
+- [Instagram Messaging API requirements](https://developers.facebook.com/documentation/instagram-platform/instagram-api-with-instagram-login/messaging-api)
+- [Instagram webhook fields](https://developers.facebook.com/documentation/instagram-platform/webhooks/fields)

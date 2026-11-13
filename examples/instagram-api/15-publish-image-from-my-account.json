@@ -1,0 +1,67 @@
+{
+  "name": "15 Publish Image from My Account",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-1",
+      "name": "Run Manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "resource": "auth",
+        "operation": "getMe",
+        "graphApiVersion": "v26.0"
+      },
+      "id": "instagram-1",
+      "name": "Get My Account",
+      "type": "@0m4r/n8n-nodes-instagram.instagram",
+      "typeVersion": 1,
+      "position": [460, 300],
+      "credentials": {
+        "instagramApi": {
+          "id": "1",
+          "name": "Instagram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "publish",
+        "node": {
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "graphApiVersion": "v26.0",
+        "imageUrl": "https://example.com/images/replace-with-public-image.jpg",
+        "caption": "Replace this image URL and caption before running"
+      },
+      "id": "instagram-2",
+      "name": "Publish Image",
+      "type": "@0m4r/n8n-nodes-instagram.instagram",
+      "typeVersion": 1,
+      "position": [700, 300],
+      "credentials": {
+        "instagramApi": {
+          "id": "1",
+          "name": "Instagram API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Run Manually": {
+      "main": [[{ "node": "Get My Account", "type": "main", "index": 0 }]]
+    },
+    "Get My Account": {
+      "main": [[{ "node": "Publish Image", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "workflow-publish-image-from-my-account",
+  "tags": []
+}

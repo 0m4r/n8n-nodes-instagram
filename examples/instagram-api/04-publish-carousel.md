@@ -15,7 +15,7 @@ This workflow publishes a carousel (album) post with up to 10 images and/or vide
 - Per-item container creation with polling
 - Carousel container creation and publishing
 - Per-item error reporting (if any child container fails, the error identifies which item)
-- Optional **alt text**, **location ID**, **product tags**, and **user tags**
+- Optional carousel **caption**, up to 3 **collaborators**, and per-slide image alt text/user tags or product tags
 
 ## Trigger
 
@@ -35,7 +35,7 @@ This workflow uses a **Cron trigger** (every 30 days).
 
 1. Import `04-publish-carousel.json` into n8n.
 2. Open the **Publish Carousel** node and select or enter your Instagram account ID.
-3. Update the **Caption** and **Carousel Media** items (2–10 items, mix of images and videos).
+3. Optionally set a **Caption**, then configure **Carousel Media** (2–10 items, mix of images and videos). Image slides can have alt text and user tags; image/video slides can each have up to 5 product tags (20 total). You may also add up to 3 collaborator usernames, a location ID, and choose whether to share to feed in **Additional Fields**. These apply to the carousel post, not individual slides.
 4. Save and execute.
 
 ## Alternative: dynamic media from input

@@ -62,7 +62,7 @@
         "operation": "sendPrivateReply",
         "node": {
           "mode": "id",
-          "id": "YOUR_IG_USER_ID"
+          "value": "YOUR_IG_USER_ID"
         },
         "commentId": "={{ $json.data[0].id }}",
         "privateReplyText": "Thanks for your comment! We've got you covered.",

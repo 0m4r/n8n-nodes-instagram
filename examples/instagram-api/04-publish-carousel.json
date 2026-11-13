@@ -24,7 +24,7 @@
         "operation": "publish",
         "node": {
           "mode": "id",
-          "id": "YOUR_IG_USER_ID"
+          "value": "YOUR_IG_USER_ID"
         },
         "graphApiVersion": "v26.0",
         "caption": "Carousel album via n8n! Swipe to see all images. #carousel #automation",
@@ -33,7 +33,8 @@
           "mediaItem": [
             {
               "mediaType": "image",
-              "imageUrl": "https://example.com/images/photo1.jpg"
+              "imageUrl": "https://example.com/images/photo1.jpg",
+              "altText": "First photo in the carousel"
             },
             {
               "mediaType": "image",
@@ -45,17 +46,7 @@
             }
           ]
         },
-        "additionalFields": {
-          "altText": "Carousel album shared via n8n automation",
-          "locationId": "",
-          "productTags": {
-            "tag": []
-          },
-          "trialReelGraduationStrategy": "MANUAL",
-          "userTags": {
-            "tag": []
-          }
-        }
+        "additionalFields": {}
       },
       "id": "instagram-1",
       "name": "Publish Carousel",

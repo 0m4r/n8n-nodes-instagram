@@ -27,7 +27,13 @@ examples/
 │   ├── 11-trigger-and-reply.json # Real-time webhook trigger + auto-reply
 │   ├── 11-trigger-and-reply.md
 │   ├── 12-full-content-pipeline.json # End-to-end: verify → publish → respond
-│   └── 12-full-content-pipeline.md
+│   ├── 12-full-content-pipeline.md
+│   ├── 13-get-my-account.json  # Manual /me request; no account ID or webhook
+│   ├── 13-get-my-account.md
+│   ├── 14-list-recent-comments.json # Find media and list comments without pasted IDs
+│   ├── 14-list-recent-comments.md
+│   ├── 15-publish-image-from-my-account.json # Publish using /me; no account ID or webhook
+│   └── 15-publish-image-from-my-account.md
 └── facebook-api/                # graph.facebook.com (Facebook Login)
     ├── 07-hashtag-search.json   # Search hashtags, fetch top/recent media
     ├── 07-hashtag-search.md
@@ -41,10 +47,10 @@ examples/
 | ------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------- |
 | **Credential Endpoint**   | `graph.instagram.com` (default)                            | `graph.facebook.com`                                              |
 | **Token Type**            | Instagram User access token                                | Facebook Login access token                                       |
-| **Primary Use Cases**     | Publishing media, comments, IG User profile, token refresh | Hashtag search, Page → Instagram account lookup, Direct Messaging |
+| **Primary Use Cases**     | Publishing media, comments, IG User profile, messaging, token refresh | Hashtag search, Page → Instagram account lookup |
 | **Media Publishing**      | ✅ Image, Reels, Stories, Carousel                         | ❌ Not supported on this endpoint                                 |
 | **Comment Moderation**    | ✅ List, hide/unhide, delete, private replies              | ❌ Not supported                                                  |
-| **Direct Messaging**      | ⚠️ Routed via `graph.facebook.com` regardless of endpoint  | ✅ Send DMs via Messaging API                                     |
+| **Direct Messaging**      | ✅ Instagram Messaging API with Instagram User token       | ✅ Messenger Platform API with Page token                         |
 | **IG User Profile/Media** | ✅ Read profile and media                                  | ❌ Not supported                                                  |
 | **Hashtag Search**        | ❌ Not supported                                           | ✅ Search by name, top media, recent media                        |
 | **Page Lookup**           | ❌ Not supported                                           | ✅ Get Instagram Business Account from a Facebook Page            |
@@ -52,11 +58,11 @@ examples/
 
 ### When to use `graph.instagram.com`
 
-Use this endpoint (the default) for **content publishing and engagement** workflows:
+Use this endpoint (the default) for **content publishing, engagement, and Instagram Login messaging** workflows:
 
 - Publishing images, Reels, Stories, and carousels to your Instagram Business/Creator account
 - Moderating comments (list, hide, unhide, delete, private replies)
-- Sending direct messages to Instagram users
+- Sending direct messages to users who initiated a conversation with your professional account (requires their Instagram-scoped ID)
 - Reading your own IG User profile and media
 - Refreshing and validating your Instagram access token
 - Responding to real-time webhook events (comments, messages)
@@ -79,17 +85,17 @@ Use this endpoint for **Facebook Login–gated** workflows that Instagram Login 
 
 Most workflows use the **Instagram API** credential. Workflow 11 additionally needs the **Instagram Webhook API** credential (Meta App Secret) for signature verification.
 
-## Trigger Types: Generic Webhook vs Instagram Trigger
+## Trigger Types: Manual, Generic Webhook, and Instagram Trigger
 
-The examples use two different trigger mechanisms. They are **not interchangeable** — they serve opposite directions of communication.
+The examples use manual execution, a generic webhook, schedules, and the Instagram Trigger. They serve different purposes.
 
-|                   | Generic Webhook (`n8n-nodes-base.webhook`)                                                  | Instagram Trigger (`instagramTrigger`)                                       |
-| ----------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| **Who initiates** | An external system (CMS, mobile app, another n8n workflow) sends an HTTP request **to n8n** | Meta/Instagram pushes an event **to n8n**                                    |
-| **Direction**     | **Outbound**: n8n → Instagram (publish, send DM, etc.)                                      | **Inbound**: Instagram → n8n (comment, message, mention, etc.)               |
-| **Typical use**   | On-demand or external-system-triggered actions                                              | Real-time reaction to Instagram activity                                     |
-| **Auth**          | None by default                                                                             | Meta signature verification (`X-Hub-Signature-256`) + Verify Token challenge |
-| **Credential**    | None                                                                                        | **Instagram Webhook API** (Meta App Secret)                                  |
+|                   | Manual Trigger (`n8n-nodes-base.manualTrigger`) | Generic Webhook (`n8n-nodes-base.webhook`)                                                  | Instagram Trigger (`instagramTrigger`)                                       |
+| ----------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| **Who initiates** | You run it from the n8n editor                  | An external system sends an HTTP request **to n8n**                                        | Meta/Instagram pushes an event **to n8n**                                    |
+| **Typical use**   | Try an API operation without a schedule        | On-demand or external-system-triggered actions                                              | Real-time reaction to Instagram activity                                     |
+| **Credential**    | **Instagram API**                               | Usually **Instagram API** for the action node                                               | **Instagram Webhook API** (App Secret) + **Instagram API** for replies        |
+
+Examples **13–15** use a Manual Trigger. Run them from the editor without configuring a webhook callback or schedule. Example 14 derives account and media IDs from API responses before listing comments.
 
 ### Use a Generic Webhook when…
 
@@ -127,8 +133,20 @@ Example using the Instagram Trigger: **11** (Trigger & Auto-Reply).
 | 10  | Page → IG Account    | Cron                  | Periodic lookup                                              |
 | 11  | Trigger & Auto-Reply | **Instagram Trigger** | Real-time inbound events from Meta                           |
 | 12  | Content Pipeline     | Generic Webhook       | External system initiates publishing                         |
+| 13  | Get My Account       | Manual Trigger        | Read `/me`; no account ID is required                        |
+| 14  | List Recent Comments | Manual Trigger        | Derive account/media IDs and list comments                   |
+| 15  | Publish from My Account | Manual Trigger     | Derive account ID with `/me`, then publish                   |
 
-> **Key takeaway:** If your workflow starts because _you_ (or an external system) want to do something _to_ Instagram, use a generic webhook (or cron). If your workflow starts because _Instagram_ pushed an event to you, use the Instagram Trigger.
+> **Key takeaway:** Use a Manual Trigger to try an operation from the editor, a schedule for recurring work, or a generic webhook when another system initiates an action. Use the Instagram Trigger when Meta pushes an event to you.
+
+### IDs required by Meta
+
+The manual examples avoid hard-coded account and media IDs where the API allows them to be discovered from `/me` or the account's media edge. Some actions still require IDs by API design:
+
+- **Send Message** requires the recipient's Instagram-scoped ID (IGSID). The API does not let an app message an arbitrary username; the recipient must first message the professional account, and the app must be authorized for Instagram Messaging. Obtain the IGSID from an eligible messaging event or API response.
+- **Comment moderation** requires the target media ID or comment ID. Example 14 discovers recent media IDs and lists comments without hard-coding them; moderation can use comment IDs from that output.
+
+See Meta's [Instagram Messaging API requirements](https://developers.facebook.com/documentation/instagram-platform/instagram-api-with-instagram-login/messaging-api) and [comment moderation guide](https://developers.facebook.com/docs/instagram-platform/comment-moderation).
 
 For curl examples and n8n HTTP Request payloads for each webhook example, see the individual `.md` files for examples 03, 08, and 12.
 
@@ -139,8 +157,8 @@ For curl examples and n8n HTTP Request payloads for each webhook example, see th
    - **Instagram API** — Access Token + API Endpoint (`graph.instagram.com` or `graph.facebook.com`)
    - **Instagram Webhook API** — Meta App Secret (for the Trigger node in `instagram-api/11-trigger-and-reply.json`)
 3. **Import a workflow** JSON file from the appropriate subfolder.
-4. **Configure parameters** — replace placeholder values like `YOUR_IG_USER_ID`, `YOUR_MEDIA_ID`, and media URLs with your own data.
-5. **Save and execute** (or activate for scheduled/webhook triggers).
+4. **Configure parameters** — replace required media URLs and operation-specific IDs. Examples 13–15 discover the account ID automatically; messaging and moderation still require target IDs for relevant actions.
+5. **Save and execute**. Click **Execute Workflow** for examples 13–15; activate scheduled, generic-webhook, or Instagram-trigger workflows as appropriate.
 
 ## Node Resources Covered by Subfolder
 

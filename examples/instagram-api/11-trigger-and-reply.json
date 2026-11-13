@@ -55,7 +55,7 @@
         "operation": "sendPrivateReply",
         "node": {
           "mode": "id",
-          "id": "YOUR_IG_USER_ID"
+          "value": "YOUR_IG_USER_ID"
         },
         "commentId": "={{ $json.value.id }}",
         "privateReplyText": "Thanks for commenting! We'll get back to you soon.",
@@ -73,7 +73,7 @@
         "operation": "sendMessage",
         "node": {
           "mode": "id",
-          "id": "YOUR_IG_USER_ID"
+          "value": "YOUR_IG_USER_ID"
         },
         "recipientId": "={{ $json.sender.id }}",
         "messageText": "Thanks for your message! We'll respond shortly.",

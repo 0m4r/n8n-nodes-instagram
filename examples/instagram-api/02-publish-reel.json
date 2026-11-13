@@ -24,7 +24,7 @@
         "operation": "publish",
         "node": {
           "mode": "id",
-          "id": "YOUR_IG_USER_ID"
+          "value": "YOUR_IG_USER_ID"
         },
         "graphApiVersion": "v26.0",
         "videoUrl": "https://example.com/videos/reel.mp4",

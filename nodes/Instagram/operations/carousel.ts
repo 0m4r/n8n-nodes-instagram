@@ -24,7 +24,14 @@ export async function handleCarousel(
     let graphApiVersion: string;
     let caption: string;
     let carouselMedia: {
-      mediaItem?: Array<{ mediaType: string; imageUrl?: string; videoUrl?: string }>;
+      mediaItem?: Array<{
+        mediaType: string;
+        imageUrl?: string;
+        videoUrl?: string;
+        altText?: string;
+        userTags?: { tag?: Array<{ username: string; x?: number; y?: number }> };
+        productTags?: { tag?: Array<{ product_id: string; x?: number; y?: number }> };
+      }>;
     };
 
     try {
@@ -73,7 +80,7 @@ export async function handleCarousel(
     }
 
     try {
-      caption = ctx.getNodeParameter('caption', itemIndex) as string;
+      caption = ctx.getNodeParameter('caption', itemIndex, '') as string;
       if (typeof caption !== 'string') {
         throw new NodeOperationError(
           ctx.getNode(),
@@ -203,12 +210,24 @@ export async function handleCarousel(
           return {
             mediaType: 'video',
             videoUrl: url,
+            productTags: (entry as IDataObject)?.productTags as
+              | { tag?: Array<{ product_id: string; x?: number; y?: number }> }
+              | undefined,
           };
         }
 
         return {
           mediaType: 'image',
           imageUrl: url,
+          altText: typeof (entry as IDataObject)?.altText === 'string'
+            ? ((entry as IDataObject).altText as string)
+            : undefined,
+          userTags: (entry as IDataObject)?.userTags as
+            | { tag?: Array<{ username: string; x?: number; y?: number }> }
+            | undefined,
+          productTags: (entry as IDataObject)?.productTags as
+            | { tag?: Array<{ product_id: string; x?: number; y?: number }> }
+            | undefined,
         };
       };
 
@@ -226,6 +245,9 @@ export async function handleCarousel(
             mediaType: string;
             imageUrl?: string;
             videoUrl?: string;
+            altText?: string;
+            userTags?: { tag?: Array<{ username: string; x?: number; y?: number }> };
+            productTags?: { tag?: Array<{ product_id: string; x?: number; y?: number }> };
           }>;
         };
         if (!carouselMedia || typeof carouselMedia !== 'object') {
@@ -268,6 +290,7 @@ export async function handleCarousel(
 
     // Simplified media item processing
     const childIds: string[] = [];
+    let totalProductTagCount = 0;
     const mediaUri = `https://${hostUrl}/${graphApiVersion}/${node}/media`;
 
     for (let i = 0; i < mediaItems.length; i++) {
@@ -313,6 +336,56 @@ export async function handleCarousel(
         item.mediaType === 'video'
           ? { media_type: 'VIDEO', video_url: url, is_carousel_item: true }
           : { image_url: url, is_carousel_item: true };
+
+      if (item.mediaType === 'image' && item.altText?.trim()) {
+        childQs.alt_text = item.altText.trim();
+      }
+
+      const userTags = item.mediaType === 'image' ? item.userTags?.tag ?? [] : [];
+      if (userTags.length > 0) {
+        childQs.user_tags = JSON.stringify(
+          userTags
+            .filter((tag) => tag.username)
+            .map((tag) => ({
+              username: tag.username.trim().replace(/^@/, ''),
+              ...(tag.x !== undefined && tag.x !== null ? { x: tag.x } : {}),
+              ...(tag.y !== undefined && tag.y !== null ? { y: tag.y } : {}),
+            })),
+        );
+      }
+
+      const productTags = item.productTags?.tag ?? [];
+      if (productTags.length > 5) {
+        throw new NodeOperationError(
+          ctx.getNode(),
+          `Carousel item ${i + 1}: Meta supports up to 5 product tags per carousel slide.`,
+          { itemIndex },
+        );
+      }
+      totalProductTagCount += productTags.filter((tag) => tag.product_id).length;
+      if (totalProductTagCount > 20) {
+        throw new NodeOperationError(
+          ctx.getNode(),
+          'Meta supports up to 20 product tags total per carousel.',
+          { itemIndex },
+        );
+      }
+      if (productTags.length > 0) {
+        const formattedProductTags = productTags
+          .filter((tag) => tag.product_id)
+          .map((tag) => ({
+            product_id: tag.product_id,
+            ...(item.mediaType === 'image' && tag.x !== undefined && tag.x !== null
+              ? { x: tag.x }
+              : {}),
+            ...(item.mediaType === 'image' && tag.y !== undefined && tag.y !== null
+              ? { y: tag.y }
+              : {}),
+          }));
+        if (formattedProductTags.length > 0) {
+          childQs.product_tags = JSON.stringify(formattedProductTags);
+        }
+      }
 
       const childRequestOptions: IHttpRequestOptions = {
         headers: { accept: 'application/json,text/*;q=0.99' },
@@ -368,8 +441,47 @@ export async function handleCarousel(
     const carouselQs: IDataObject = {
       media_type: 'CAROUSEL',
       children: childIds.join(','),
-      caption,
     };
+
+    const additionalFields = ctx.getNodeParameter(
+      'additionalFields',
+      itemIndex,
+      {},
+    ) as IDataObject;
+
+    if (caption.trim()) {
+      carouselQs.caption = caption;
+    }
+
+    const locationId = (
+      additionalFields.locationId as string | undefined
+    )?.trim();
+    if (locationId) {
+      carouselQs.location_id = locationId;
+    }
+
+    const shareToFeed = additionalFields.shareToFeed as boolean | undefined;
+    if (typeof shareToFeed === 'boolean') {
+      carouselQs.share_to_feed = shareToFeed;
+    }
+
+    const rawCollaborators = additionalFields.collaborators as string | undefined;
+    if (rawCollaborators) {
+      const collaborators = rawCollaborators
+        .split(',')
+        .map((username) => username.trim().replace(/^@/, ''))
+        .filter(Boolean);
+      if (collaborators.length > 3) {
+        throw new NodeOperationError(
+          ctx.getNode(),
+          'Meta supports up to 3 collaborators per Instagram post.',
+          { itemIndex },
+        );
+      }
+      if (collaborators.length > 0) {
+        carouselQs.collaborators = JSON.stringify(collaborators);
+      }
+    }
 
     const carouselRequestOptions: IHttpRequestOptions = {
       headers: { accept: 'application/json,text/*;q=0.99' },

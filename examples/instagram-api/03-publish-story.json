@@ -19,10 +19,9 @@
         "resource": "stories",
         "node": {
           "mode": "id",
-          "id": "YOUR_IG_USER_ID"
+          "value": "YOUR_IG_USER_ID"
         },
         "videoUrl": "={{ $json.body.videoUrl }}",
-        "caption": "={{ $json.caption || 'New story via n8n!' }}",
         "additionalFields": {}
       },
       "id": "instagram-1",
