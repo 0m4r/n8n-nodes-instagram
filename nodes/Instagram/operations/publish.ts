@@ -135,8 +135,7 @@ export async function handlePublish(
   const productTagsCollection =
     resource === 'image' || resource === 'reels'
       ? (additionalFields.productTags as
-          | { tag?: Array<{ product_id: string; x?: number; y?: number }> }
-          | undefined)
+          { tag?: Array<{ product_id: string; x?: number; y?: number }> } | undefined)
       : undefined;
   const rawCollaborators =
     resource === 'image' || resource === 'reels'

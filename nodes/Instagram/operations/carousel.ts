@@ -211,23 +211,21 @@ export async function handleCarousel(
             mediaType: 'video',
             videoUrl: url,
             productTags: (entry as IDataObject)?.productTags as
-              | { tag?: Array<{ product_id: string; x?: number; y?: number }> }
-              | undefined,
+              { tag?: Array<{ product_id: string; x?: number; y?: number }> } | undefined,
           };
         }
 
         return {
           mediaType: 'image',
           imageUrl: url,
-          altText: typeof (entry as IDataObject)?.altText === 'string'
-            ? ((entry as IDataObject).altText as string)
-            : undefined,
+          altText:
+            typeof (entry as IDataObject)?.altText === 'string'
+              ? ((entry as IDataObject).altText as string)
+              : undefined,
           userTags: (entry as IDataObject)?.userTags as
-            | { tag?: Array<{ username: string; x?: number; y?: number }> }
-            | undefined,
+            { tag?: Array<{ username: string; x?: number; y?: number }> } | undefined,
           productTags: (entry as IDataObject)?.productTags as
-            | { tag?: Array<{ product_id: string; x?: number; y?: number }> }
-            | undefined,
+            { tag?: Array<{ product_id: string; x?: number; y?: number }> } | undefined,
         };
       };
 
@@ -341,7 +339,7 @@ export async function handleCarousel(
         childQs.alt_text = item.altText.trim();
       }
 
-      const userTags = item.mediaType === 'image' ? item.userTags?.tag ?? [] : [];
+      const userTags = item.mediaType === 'image' ? (item.userTags?.tag ?? []) : [];
       if (userTags.length > 0) {
         childQs.user_tags = JSON.stringify(
           userTags
@@ -443,19 +441,13 @@ export async function handleCarousel(
       children: childIds.join(','),
     };
 
-    const additionalFields = ctx.getNodeParameter(
-      'additionalFields',
-      itemIndex,
-      {},
-    ) as IDataObject;
+    const additionalFields = ctx.getNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
 
     if (caption.trim()) {
       carouselQs.caption = caption;
     }
 
-    const locationId = (
-      additionalFields.locationId as string | undefined
-    )?.trim();
+    const locationId = (additionalFields.locationId as string | undefined)?.trim();
     if (locationId) {
       carouselQs.location_id = locationId;
     }
