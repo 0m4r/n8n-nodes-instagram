@@ -1,4 +1,8 @@
-import type { IWebhookFunctions } from 'n8n-workflow';
+import type {
+  ICredentialTestFunctions,
+  ICredentialsDecrypted,
+  IWebhookFunctions,
+} from 'n8n-workflow';
 import { createHmac } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 import { InstagramTrigger } from './InstagramTrigger.node';
@@ -33,6 +37,7 @@ const createWebhookContext = ({
       readRawBody: async () => {},
     }),
     getResponseObject: () => mockResponse,
+    logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
     mockResponse,
   } as unknown as IWebhookFunctions & { mockResponse: typeof mockResponse };
 };
@@ -236,5 +241,33 @@ describe('InstagramTrigger webhook', () => {
         }),
       ),
     ).resolves.toEqual({ webhookResponse: 'OK' });
+  });
+});
+
+describe('Instagram Trigger credential test', () => {
+  const credentialTest = new InstagramTrigger().methods.credentialTest.instagramTrigger;
+  const context = {
+    logger: { error: vi.fn(), debug: vi.fn() },
+  } as unknown as ICredentialTestFunctions;
+
+  it('accepts a configured app secret and explains when its validity is checked', async () => {
+    await expect(
+      credentialTest.call(context, {
+        data: { appSecret: 'configured-secret' },
+      } as unknown as ICredentialsDecrypted),
+    ).resolves.toEqual({
+      status: 'OK',
+      message:
+        'App Secret is configured. Its validity is checked against incoming webhook signatures.',
+    });
+  });
+
+  it('reports an error when the app secret is missing', async () => {
+    await expect(
+      credentialTest.call(context, { data: {} } as unknown as ICredentialsDecrypted),
+    ).resolves.toEqual({
+      status: 'Error',
+      message: 'App Secret is required for Instagram webhook signature verification.',
+    });
   });
 });

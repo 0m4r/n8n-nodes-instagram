@@ -1,9 +1,12 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type {
+  ICredentialTestFunctions,
+  ICredentialsDecrypted,
   IDataObject,
   IHookFunctions,
   INodeExecutionData,
   INodeType,
+  INodeCredentialTestResult,
   INodeTypeDescription,
   IWebhookFunctions,
   IWebhookResponseData,
@@ -53,6 +56,50 @@ const INSTAGRAM_WEBHOOK_FIELDS = [
 ] as const;
 
 export class InstagramTrigger implements INodeType {
+  methods = {
+    credentialTest: {
+      async instagramTrigger(
+        this: ICredentialTestFunctions,
+        credential: ICredentialsDecrypted,
+      ): Promise<INodeCredentialTestResult> {
+        const appSecret = credential.data?.appSecret;
+        const hasAppSecret = typeof appSecret === 'string' && appSecret.length > 0;
+        const logContext = {
+          file: 'InstagramTrigger.node.ts',
+          function: 'credentialTest.instagramTrigger',
+        };
+        this.logger.debug(
+          '[InstagramTrigger.node.ts:credentialTest.instagramTrigger] Testing webhook credential',
+          {
+            ...logContext,
+            appSecretConfigured: hasAppSecret,
+          },
+        );
+
+        if (!hasAppSecret) {
+          this.logger.error(
+            '[InstagramTrigger.node.ts:credentialTest.instagramTrigger] App Secret is missing',
+            logContext,
+          );
+          return {
+            status: 'Error',
+            message: 'App Secret is required for Instagram webhook signature verification.',
+          };
+        }
+
+        this.logger.debug(
+          '[InstagramTrigger.node.ts:credentialTest.instagramTrigger] App Secret is present; signature validity is checked on webhook delivery',
+          logContext,
+        );
+        return {
+          status: 'OK',
+          message:
+            'App Secret is configured. Its validity is checked against incoming webhook signatures.',
+        };
+      },
+    },
+  };
+
   description: INodeTypeDescription = {
     displayName: 'Instagram Trigger',
     name: 'instagramTrigger',
@@ -170,7 +217,18 @@ export class InstagramTrigger implements INodeType {
     // POST: event notification
     const skipVerification = this.getNodeParameter('skipSignatureVerification') as boolean;
 
+    if (skipVerification) {
+      this.logger.debug(
+        '[InstagramTrigger.node.ts:webhook] Skipping signature verification by configuration',
+        {
+          file: 'InstagramTrigger.node.ts',
+          function: 'webhook',
+        },
+      );
+    }
+
     if (!skipVerification) {
+      const logContext = { file: 'InstagramTrigger.node.ts', function: 'webhook' };
       const request = this.getRequestObject();
       await request.readRawBody();
       const rawBody = request.rawBody;
@@ -178,11 +236,24 @@ export class InstagramTrigger implements INodeType {
       const signature = typeof signatureHeader === 'string' ? signatureHeader : '';
       let appSecret = '';
 
+      this.logger.debug(
+        '[InstagramTrigger.node.ts:webhook] Checking signature verification inputs',
+        {
+          ...logContext,
+          signatureHeaderPresent: signature.length > 0,
+          rawBodyAvailable: Buffer.isBuffer(rawBody),
+        },
+      );
+
       try {
         const credentials = await this.getCredentials('instagramWebhookApi');
         appSecret = typeof credentials.appSecret === 'string' ? credentials.appSecret : '';
-      } catch {
+      } catch (error) {
         appSecret = '';
+        this.logger.error('[InstagramTrigger.node.ts:webhook] Failed to read webhook credential', {
+          ...logContext,
+          errorMessage: error instanceof Error ? error.message : String(error),
+        });
       }
 
       const rejectRequest = (statusCode: number, message: string) => {
@@ -191,19 +262,46 @@ export class InstagramTrigger implements INodeType {
       };
 
       if (!appSecret || !Buffer.isBuffer(rawBody)) {
+        this.logger.error(
+          '[InstagramTrigger.node.ts:webhook] Signature verification is unavailable',
+          {
+            ...logContext,
+            appSecretConfigured: appSecret.length > 0,
+            rawBodyAvailable: Buffer.isBuffer(rawBody),
+          },
+        );
         return rejectRequest(500, 'Webhook signature verification is unavailable');
       }
 
       const digest = signature.startsWith('sha256=') ? signature.slice(7) : '';
       if (!/^[\da-f]{64}$/i.test(digest)) {
+        this.logger.error(
+          '[InstagramTrigger.node.ts:webhook] Signature header has an invalid format',
+          {
+            ...logContext,
+            signatureHeaderPresent: signature.length > 0,
+            digestLength: digest.length,
+          },
+        );
         return rejectRequest(401, 'Forbidden');
       }
 
       const expectedDigest = createHmac('sha256', appSecret).update(rawBody).digest();
       const receivedDigest = Buffer.from(digest, 'hex');
       if (!timingSafeEqual(expectedDigest, receivedDigest)) {
+        this.logger.error(
+          '[InstagramTrigger.node.ts:webhook] Signature does not match the configured App Secret',
+          {
+            ...logContext,
+          },
+        );
         return rejectRequest(401, 'Forbidden');
       }
+
+      this.logger.debug(
+        '[InstagramTrigger.node.ts:webhook] Signature verified successfully',
+        logContext,
+      );
     }
 
     const bodyData = this.getBodyData();
