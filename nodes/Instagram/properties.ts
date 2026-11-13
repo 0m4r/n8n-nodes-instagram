@@ -717,14 +717,14 @@ export const instagramProperties: INodeProperties[] = [
         name: 'mediaItem',
         values: [
           {
-            displayName: 'Media Type',
-            name: 'mediaType',
-            type: 'options',
-            default: 'image',
-            options: [
-              { name: 'Image', value: 'image' },
-              { name: 'Video', value: 'video' },
-            ],
+            displayName: 'Alt Text',
+            name: 'altText',
+            type: 'string',
+            default: '',
+            description: 'Alternative text for this image slide. Image slides only.',
+            displayOptions: {
+              show: { mediaType: ['image'] },
+            },
           },
           {
             displayName: 'Image URL',
@@ -737,24 +737,57 @@ export const instagramProperties: INodeProperties[] = [
             },
           },
           {
-            displayName: 'Video URL',
-            name: 'videoUrl',
-            type: 'string',
-            default: '',
-            description: 'URL of the video. Required when Media Type is Video.',
-            displayOptions: {
-              show: { mediaType: ['video'] },
-            },
+            displayName: 'Media Type',
+            name: 'mediaType',
+            type: 'options',
+            default: 'image',
+            options: [
+              { name: 'Image', value: 'image' },
+              { name: 'Video', value: 'video' },
+            ],
           },
           {
-            displayName: 'Alt Text',
-            name: 'altText',
-            type: 'string',
-            default: '',
-            description: 'Alternative text for this image slide. Image slides only.',
-            displayOptions: {
-              show: { mediaType: ['image'] },
-            },
+            displayName: 'Product Tags',
+            name: 'productTags',
+            type: 'fixedCollection',
+            typeOptions: { multipleValues: true, maxValue: 5 },
+            placeholder: 'Add Product Tag',
+            default: {},
+            description:
+              'Products to tag on this carousel slide. Up to 5 per slide and 20 per carousel.',
+            options: [
+              {
+                displayName: 'Tag',
+                name: 'tag',
+                values: [
+                  {
+                    displayName: 'Product ID',
+                    name: 'product_id',
+                    type: 'string',
+                    default: '',
+                    required: true,
+                  },
+                  {
+                    displayName: 'X Position',
+                    name: 'x',
+                    type: 'number',
+                    typeOptions: { minValue: 0, maxValue: 1, numberStepSize: 0.01 },
+                    default: 0.5,
+                    description: 'Optional horizontal position for image slides',
+                    displayOptions: { show: { mediaType: ['image'] } },
+                  },
+                  {
+                    displayName: 'Y Position',
+                    name: 'y',
+                    type: 'number',
+                    typeOptions: { minValue: 0, maxValue: 1, numberStepSize: 0.01 },
+                    default: 0.5,
+                    description: 'Optional vertical position for image slides',
+                    displayOptions: { show: { mediaType: ['image'] } },
+                  },
+                ],
+              },
+            ],
           },
           {
             displayName: 'User Tags',
@@ -785,7 +818,7 @@ export const instagramProperties: INodeProperties[] = [
                     type: 'number',
                     typeOptions: { minValue: 0, maxValue: 1, numberStepSize: 0.01 },
                     default: 0.5,
-                    description: 'Horizontal image position from 0 to 1.',
+                    description: 'Horizontal image position from 0 to 1',
                   },
                   {
                     displayName: 'Y Position',
@@ -793,54 +826,21 @@ export const instagramProperties: INodeProperties[] = [
                     type: 'number',
                     typeOptions: { minValue: 0, maxValue: 1, numberStepSize: 0.01 },
                     default: 0.5,
-                    description: 'Vertical image position from 0 to 1.',
+                    description: 'Vertical image position from 0 to 1',
                   },
                 ],
               },
             ],
           },
           {
-            displayName: 'Product Tags',
-            name: 'productTags',
-            type: 'fixedCollection',
-            typeOptions: { multipleValues: true, maxValue: 5 },
-            placeholder: 'Add Product Tag',
-            default: {},
-            description:
-              'Products to tag on this carousel slide. Up to 5 per slide and 20 per carousel.',
-            options: [
-              {
-                displayName: 'Tag',
-                name: 'tag',
-                values: [
-                  {
-                    displayName: 'Product ID',
-                    name: 'product_id',
-                    type: 'string',
-                    default: '',
-                    required: true,
-                  },
-                  {
-                    displayName: 'X Position',
-                    name: 'x',
-                    type: 'number',
-                    typeOptions: { minValue: 0, maxValue: 1, numberStepSize: 0.01 },
-                    default: 0.5,
-                    description: 'Optional horizontal position for image slides.',
-                    displayOptions: { show: { mediaType: ['image'] } },
-                  },
-                  {
-                    displayName: 'Y Position',
-                    name: 'y',
-                    type: 'number',
-                    typeOptions: { minValue: 0, maxValue: 1, numberStepSize: 0.01 },
-                    default: 0.5,
-                    description: 'Optional vertical position for image slides.',
-                    displayOptions: { show: { mediaType: ['image'] } },
-                  },
-                ],
-              },
-            ],
+            displayName: 'Video URL',
+            name: 'videoUrl',
+            type: 'string',
+            default: '',
+            description: 'URL of the video. Required when Media Type is Video.',
+            displayOptions: {
+              show: { mediaType: ['video'] },
+            },
           },
         ],
       },
@@ -868,6 +868,37 @@ export const instagramProperties: INodeProperties[] = [
           'Alternative text for image posts (for accessibility). Image only; not supported for Reels or Stories.',
         displayOptions: {
           show: { resource: ['image'] },
+        },
+      },
+      {
+        displayName: 'Audio Name',
+        name: 'audioName',
+        type: 'string',
+        default: '',
+        description: 'Optional audio name for the Reel. Reels only.',
+        displayOptions: {
+          show: { resource: ['reels'] },
+        },
+      },
+      {
+        displayName: 'Collaborators',
+        name: 'collaborators',
+        type: 'string',
+        default: '',
+        description:
+          'Comma-separated Instagram usernames (up to 3). Available for feed images, Reels, and carousels; not Stories.',
+        displayOptions: {
+          show: { resource: ['image', 'reels', 'carousel'] },
+        },
+      },
+      {
+        displayName: 'Cover Image URL',
+        name: 'coverUrl',
+        type: 'string',
+        default: '',
+        description: 'Public image URL to use as the Reel cover. Reels only.',
+        displayOptions: {
+          show: { resource: ['reels'] },
         },
       },
       {
@@ -944,12 +975,32 @@ export const instagramProperties: INodeProperties[] = [
         ],
       },
       {
+        displayName: 'Share to Feed',
+        name: 'shareToFeed',
+        type: 'boolean',
+        default: true,
+        description: 'Whether the Reel or carousel should also appear in the feed',
+        displayOptions: {
+          show: { resource: ['reels', 'carousel'] },
+        },
+      },
+      {
+        displayName: 'Thumbnail Offset (Ms)',
+        name: 'thumbOffset',
+        type: 'number',
+        typeOptions: { minValue: 0 },
+        default: 0,
+        description: 'Video frame offset in milliseconds to use as the Reel thumbnail. Reels only.',
+        displayOptions: {
+          show: { resource: ['reels'] },
+        },
+      },
+      {
         displayName: 'Trial Reel - Graduation Strategy',
         name: 'trialReelGraduationStrategy',
         type: 'options',
         default: 'MANUAL',
-        description:
-          'Configure Trial Reels graduation strategy. Available for Reels only.',
+        description: 'Configure Trial Reels graduation strategy. Available for Reels only.',
         displayOptions: {
           show: { resource: ['reels'] },
         },
@@ -1030,58 +1081,6 @@ export const instagramProperties: INodeProperties[] = [
             ],
           },
         ],
-      },
-      {
-        displayName: 'Collaborators',
-        name: 'collaborators',
-        type: 'string',
-        default: '',
-        description:
-          'Comma-separated Instagram usernames (up to 3). Available for feed images, Reels, and carousels; not Stories.',
-        displayOptions: {
-          show: { resource: ['image', 'reels', 'carousel'] },
-        },
-      },
-      {
-        displayName: 'Cover Image URL',
-        name: 'coverUrl',
-        type: 'string',
-        default: '',
-        description: 'Public image URL to use as the Reel cover. Reels only.',
-        displayOptions: {
-          show: { resource: ['reels'] },
-        },
-      },
-      {
-        displayName: 'Share to Feed',
-        name: 'shareToFeed',
-        type: 'boolean',
-        default: true,
-        description: 'Whether the Reel or carousel should also appear in the feed.',
-        displayOptions: {
-          show: { resource: ['reels', 'carousel'] },
-        },
-      },
-      {
-        displayName: 'Audio Name',
-        name: 'audioName',
-        type: 'string',
-        default: '',
-        description: 'Optional audio name for the Reel. Reels only.',
-        displayOptions: {
-          show: { resource: ['reels'] },
-        },
-      },
-      {
-        displayName: 'Thumbnail Offset (ms)',
-        name: 'thumbOffset',
-        type: 'number',
-        typeOptions: { minValue: 0 },
-        default: 0,
-        description: 'Video frame offset in milliseconds to use as the Reel thumbnail. Reels only.',
-        displayOptions: {
-          show: { resource: ['reels'] },
-        },
       },
     ],
   },
