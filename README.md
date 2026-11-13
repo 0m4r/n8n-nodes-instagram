@@ -23,7 +23,7 @@ All functionality is built on the Facebook/Instagram Graph API, including media 
 
 ## Installation
 
-Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes/installation/) in the n8n community nodes documentation.
+The npm package name is `@0m4r/n8n-nodes-instagram`. On a self-hosted n8n instance, install it from **Settings → Community nodes** or use n8n's [manual installation instructions](https://docs.n8n.io/integrations/community-nodes/installation-and-management/). Unverified community nodes require self-hosting; n8n Cloud only makes verified community nodes available.
 
 ## Operations
 
@@ -37,7 +37,7 @@ The node exposes several resources:
 | `Carousel`            | Publish a carousel (album) post with up to 10 images and/or videos. The node creates child containers, builds a carousel container, waits for it to be ready, then publishes it. Includes detailed per-item error reporting and progress messages.              |
 | `Comments`            | List comments on media, hide/unhide or delete individual comments, disable/enable comments on media, and send **private replies** to commenters.                                                                                                                |
 | `IG User`             | Read basic profile data for an Instagram Business/Creator account and list its media using the IG User Graph API.                                                                                                                                               |
-| `IG Hashtag`          | Search for hashtags by name and fetch top or recent media for a hashtag with paging and limit/return-all support.                                                                                                                                               |
+| `IG Hashtag`          | Search for hashtags by name and fetch top or recent media for a hashtag with cursor pagination and limit/return-all support.                                                                                                                                   |
 | `Messaging`           | Send direct messages (DMs) to Instagram users via the Instagram Messaging API.                                                                                                                                                                                  |
 | `Page`                | Given a Facebook Page ID, fetch the connected Instagram Business/Creator account (`instagram_business_account`).                                                                                                                                                |
 | `Auth`                | Exchange short-lived Instagram User tokens for long-lived tokens, refresh long-lived tokens, and call the Graph API `/me` endpoint.                                                                                                                             |
@@ -45,7 +45,7 @@ The node exposes several resources:
 
 ## Credentials
 
-Create an **Instagram API** credential and provide an access token with permissions for the selected API endpoint.
+Create an **Instagram API** credential and provide a token issued for the selected Meta API setup. The endpoint setting chooses the Graph API host; it does not convert a token or grant permissions.
 
 For **Instagram Login** (`graph.instagram.com`), use an Instagram User access token with:
 
@@ -62,6 +62,7 @@ For **Facebook Login** (`graph.facebook.com`), use a Facebook User or Page acces
 - `pages_read_engagement`
 - `instagram_manage_comments`
 - `instagram_manage_messages`
+- `pages_messaging` (for Facebook Login messaging)
 - `pages_manage_metadata` (for webhook subscriptions)
 
 Steps:
@@ -69,24 +70,26 @@ Steps:
 1. Make sure the Instagram account is a Business/Creator (professional) account. A linked Facebook Page is required for Facebook Login/Page-token operations, but is not a general requirement for Instagram Login.
 2. Use Meta's Graph Explorer or your own app to generate an access token that includes the scopes listed above.
 3. Convert it to a long-lived token and paste it into the credential's **Access Token** field.
-4. **Select API Endpoint**: Choose between:
-   - **Instagram Graph API** (`graph.instagram.com`) - Default option for Instagram Login.
-   - **Facebook Graph API** (`graph.facebook.com`) - Use a Facebook Login token; required for Page lookup and hashtag search.
+4. **Select API Endpoint**: Choose the host that matches the token:
+   - **Instagram Graph API** (`graph.instagram.com`) - default; use with an Instagram User token from Instagram Login.
+   - **Facebook Graph API** (`graph.facebook.com`) - use with a Facebook User or Page token from Facebook Login.
 5. The built-in credential test uses v26.0 to confirm the token works.
 
-Changing the endpoint does not convert your token, change its login flow, or grant permissions. Use a token issued for the selected API. The node routes requests to the endpoint selected in the credential; use the token type and permissions required by that operation's Meta login flow. Page lookup and hashtag search require Facebook Login.
+Changing the endpoint does not convert your token, change its login flow, or grant permissions. Use the token type and permissions required by the selected Meta login flow and operation. Both API setups support content publishing and comment moderation. Facebook Login is required for Page lookup and hashtag search; product tagging is available through the Facebook Login setup. Stories can only be published to eligible Business accounts. The **Auth** token exchange and refresh operations use Instagram Login endpoints and Instagram User tokens.
+
+For the full operation-by-operation permission matrix and access requirements, see Meta's [Instagram Platform overview](https://developers.facebook.com/documentation/instagram-platform/overview), [content publishing requirements](https://developers.facebook.com/documentation/instagram-platform/content-publishing), and [webhook field permissions](https://developers.facebook.com/documentation/instagram-platform/webhooks).
 
 > **Note on Messaging:** The Instagram Messaging API (Send Message and Send Private Reply) supports two host URLs depending on your credential's **API Endpoint** setting:
 >
 > - **Instagram Graph API** (`graph.instagram.com`) - Use with Instagram Login access token
 > - **Facebook Graph API** (`graph.facebook.com`) - Use with Facebook Page access token
 >
-> The node automatically uses the host URL matching your credential's **API Endpoint** setting. The default is `graph.facebook.com` for backward compatibility.
+> The node uses the host URL selected in your credential. The default is `graph.instagram.com`.
 >
 > **Important:** You must use the correct access token type for your chosen API endpoint:
 >
 > - Instagram Login: Use an **Instagram User access token**
-> - Facebook Login: Use a **Facebook Page access token** with `instagram_manage_messages` permission
+> - Facebook Login: Use the Facebook token and permissions required by Meta's [Instagram Messaging via Messenger Platform](https://developers.facebook.com/documentation/business-messaging/instagram-messaging) setup.
 >
 > See Meta's [Send a Private Reply to a Commenter](https://developers.facebook.com/documentation/instagram-platform/private-replies) and [Instagram Send API reference](https://developers.facebook.com/docs/messenger-platform/instagram/reference/send-api/) for more details.
 
@@ -105,7 +108,7 @@ The **Instagram Trigger** receives Meta webhook notifications and starts a workf
 - Meta must be able to reach the callback URL over **HTTPS** with a valid TLS certificate. Self-signed certificates are not supported.
 - Subscribe to fields in **both** places: select them for your app in the Meta App Dashboard, then enable notifications on each Instagram professional account using that account's token. Account subscription applies the fields selected for the app; it does not select a different field set per account.
 
-These requirements and the permissions for other webhook fields vary by API setup and field. See Meta's [Instagram Webhooks setup and requirements](https://developers.facebook.com/documentation/instagram-platform/webhooks) and [field/permission matrix](https://developers.facebook.com/documentation/instagram-platform/webhooks/fields).
+The trigger can filter `comments`, `live_comments`, `message_echoes`, `messaging_reactions`, `messages`, `mentions`, `messaging_handover`, `messaging_referrals`, `messaging_optins`, `messaging_seen`, `messaging_postbacks`, and `standby`. `story_insights` is also available with Facebook Login. Meta's supported fields and permissions depend on the API setup; check the [Instagram Webhooks field and permission matrix](https://developers.facebook.com/documentation/instagram-platform/webhooks) before subscribing.
 
 ### Setup
 
@@ -136,10 +139,10 @@ Each accepted event is output as an item with `object`, `field`, `value`, `id`, 
 
 ## Compatibility
 
-- Built and typechecked against **`n8n-workflow 2.41.2`**, the current stable release.
+- Development and CI use **`n8n-workflow 2.41.2`** as the build and typecheck target. This records the tested development dependency; it isn't a claim that this is the latest n8n release.
 - Declares a peer dependency on **`n8n-workflow *`** as required by n8n's strict community-node linter. Compatibility with earlier workflow versions is not verified.
 - Requires n8n with community nodes enabled.
-- Uses only built-in n8n dependencies, so it is Cloud-compatible.
+- The runtime package has no third-party production dependencies. n8n Cloud availability depends on n8n verification; unverified community nodes must be installed on a self-hosted instance.
 
 ## Usage
 
@@ -148,9 +151,9 @@ Each accepted event is output as an item with `object`, `field`, `value`, `id`, 
 1. Add the **Instagram** node to your workflow and select one of the resources (`Image` / `Reels` / `Stories`).
 2. Provide:
    - **Account**: Select your Instagram account from the dropdown or enter the IG User ID manually
-   - **Graph API Version**: Enter the API version (e.g., `v26.0`, `v25.0`, `v24.0`) - defaults to `v26.0`
-   - **Media URL** and, for feed images or Reels, an optional **Caption** (Stories do not support captions)
-3. Add optional fields only where supported: alt text for feed images and carousel image slides; location tags for feed images, Reels, and carousels; product tags for feed images, Reels, and carousel slides (up to 5 per slide, 20 per carousel); user tags for images, Reels, Stories, and carousel image slides; collaborators for feed images, Reels, and carousels. Cover/audio/thumbnail/Trial Reel settings are Reels-only; share-to-feed is available for Reels and carousels.
+   - **Graph API Version**: defaults to `v26.0`; select a version currently supported by Meta for the operation.
+   - **Media URL**: a public URL Meta can fetch. The node does not upload n8n binary data directly. Feed images and Reels accept an optional **Caption**; Stories do not.
+3. Add optional fields only where supported: alt text for feed images and carousel image slides; location tags for feed images, Reels, and carousels; product tags for feed images and Reels (up to 20 per post) and carousel slides (up to 5 per slide and 20 per carousel), using Facebook Login; user tags for images, Reels, Stories, and carousel image slides; collaborators for feed images, Reels, and carousels. Cover/audio/thumbnail/Trial Reel settings are Reels-only; share-to-feed is available for Reels and carousels.
 4. The node first creates the media container, polls Graph API until processing completes, then triggers `media_publish`.
 5. For long-running uploads (large videos), the node uses robust polling and retry logic and surfaces progress via the n8n execution logs (for example, when publishing Reels or Trial Reels).
 6. Handle any errors returned by the API (rate limits, permissions, validation) via the node's error output or `Continue On Fail`.
@@ -160,12 +163,12 @@ Each accepted event is output as an item with `object`, `field`, `value`, `id`, 
 1. Add the **Instagram** node and set **Resource** to `Carousel`, **Operation** to `Publish`.
 2. Provide:
    - **Account** – Select your Instagram account from the list (loaded automatically) or enter the IG User ID manually
-   - **Graph API Version** – Enter the API version (e.g., `v26.0`) - defaults to `v26.0`
+   - **Graph API Version** – defaults to `v26.0`; select a version currently supported by Meta for the operation.
    - `Caption` – optional caption for the published carousel.
    - `Carousel Media` – 2–10 items, each with:
      - `Media Type` – `Image` or `Video`.
      - `Image URL` or `Video URL` – public URLs Meta can fetch.
-     - For image slides, optional `Alt Text` and `User Tags`; image and video slides may have up to 5 `Product Tags` each (20 total per carousel).
+     - For image slides, optional `Alt Text` and `User Tags`; carousel slides may have up to 5 `Product Tags` each (20 total per carousel, using Facebook Login).
    - **Additional Fields → Collaborators** – optional, up to 3 Instagram usernames.
 3. The node:
    - Creates one child container per image/video (`is_carousel_item=true` for each).
@@ -197,7 +200,7 @@ Each accepted event is output as an item with `object`, `field`, `value`, `id`, 
    - `Get Media` – list media owned by that account, including media type, URLs, caption, permalink, timestamp and username.
 3. Provide:
    - `Node` – the IG User ID of the professional account you want to read (or `me` if your credential token belongs to that account).
-   - **Graph API Version** – Enter the API version (e.g., `v26.0`) - defaults to `v26.0`.
+   - **Graph API Version** – defaults to `v26.0`; select a version currently supported by Meta for the operation.
 
 ### Searching hashtags and fetching hashtag media (IG Hashtag)
 
@@ -212,7 +215,7 @@ Each accepted event is output as an item with `object`, `field`, `value`, `id`, 
 4. For **Get Recent Media** / **Get Top Media**, provide:
    - `Node` – the IG User ID performing the query.
    - `Hashtag ID` – the ID returned from the search operation.
-   - `Return All` / `Limit` – choose whether to fetch all available media (within a safety cap) or only up to a limit.
+   - `Return All` / `Limit` – choose whether to follow all pages returned by Meta or stop at the configured limit. The default limit is 50; the limit field accepts values from 1 to 500.
 
 ### Sending direct messages (Messaging)
 
@@ -220,7 +223,7 @@ Each accepted event is output as an item with `object`, `field`, `value`, `id`, 
 2. Choose **Operation** `Send Message`.
 3. Provide:
    - `Node` – the IG professional account ID that will send the message.
-   - **Graph API Version** – Enter the API version (e.g., `v26.0`) - defaults to `v26.0`.
+   - **Graph API Version** – defaults to `v26.0`; select a version currently supported by Meta for the operation.
    - `Recipient IG User ID` – the Instagram-scoped user ID (IGSID) of the recipient, typically obtained from Messaging webhook events.
    - `Message Text` – the text body of the direct message.
 
@@ -238,13 +241,13 @@ The recipient must have initiated a conversation with the professional account; 
    - `App Secret` – the Instagram App Secret from your Meta App Dashboard.
 4. For **Refresh Access Token**, optionally provide:
    - `Access Token` – the long-lived token to refresh. Leave empty to use the token from the credential.
-5. For **Get Me**, the node uses a fixed, versioned `/me` URL under the hood and does **not** depend on any UI parameters, so older workflows remain compatible.
+5. For **Get Me**, provide the **Graph API Version**. The request uses the host selected in the credential and the access token stored in that credential.
 
 ### Getting the Instagram account for a Facebook Page (Page)
 
 1. Add the **Instagram** node and set **Resource** to `Page`, **Operation** to `Get Instagram Account`.
 2. Provide:
-   - **Graph API Version** – Enter the API version (e.g., `v26.0`) - defaults to `v26.0`.
+   - **Graph API Version** – defaults to `v26.0`; select a version currently supported by Meta for the operation.
    - `Page ID` – the Facebook Page ID that is linked to your Instagram professional account.
 3. The node calls:
    - `GET /{page-id}?fields=instagram_business_account`
@@ -262,16 +265,19 @@ The recipient must have initiated a conversation with the professional account; 
 
 - [Example workflows](examples/README.md), including manual examples that do not need webhook setup or hard-coded account IDs.
 
-- [n8n community nodes documentation](https://docs.n8n.io/integrations/#community-nodes)
-- [Instagram Graph API - Publishing](https://developers.facebook.com/docs/instagram-api/reference/ig-user/media)
-- [Video/Reels publishing guide](https://developers.facebook.com/docs/instagram-api/guides/content-publishing/reels/)
+- [n8n community node installation and management](https://docs.n8n.io/integrations/community-nodes/installation-and-management/)
+- [n8n create nodes documentation](https://docs.n8n.io/connect/create-nodes/overview/)
+- [Instagram Platform overview](https://developers.facebook.com/documentation/instagram-platform/overview)
+- [Instagram content publishing](https://developers.facebook.com/documentation/instagram-platform/content-publishing)
+- [Instagram webhooks](https://developers.facebook.com/documentation/instagram-platform/webhooks)
 - [Comment Moderation](https://developers.facebook.com/docs/instagram-platform/comment-moderation)
 - [Private Replies](https://developers.facebook.com/docs/instagram-platform/private-replies)
 - [IG User](https://developers.facebook.com/docs/instagram-platform/instagram-graph-api/reference/ig-user)
 - [IG Hashtag Search](https://developers.facebook.com/docs/instagram-platform/instagram-graph-api/reference/ig-hashtag-search/)
 - [IG Hashtag Recent Media](https://developers.facebook.com/docs/instagram-platform/instagram-graph-api/reference/ig-hashtag/recent-media/)
 - [IG Hashtag Top Media](https://developers.facebook.com/docs/instagram-platform/instagram-graph-api/reference/ig-hashtag/top-media/)
-- [Instagram Messaging API](https://developers.facebook.com/docs/messenger-platform/instagram/features/)
+- [Instagram Messaging API with Instagram Login](https://developers.facebook.com/documentation/instagram-platform/instagram-api-with-instagram-login/messaging-api)
+- [Instagram Messaging via Messenger Platform](https://developers.facebook.com/documentation/business-messaging/instagram-messaging)
 - [Instagram Platform Access Token](https://developers.facebook.com/docs/instagram-platform/reference/access_token/)
 - [Instagram Platform Refresh Access Token](https://developers.facebook.com/docs/instagram-platform/reference/refresh_access_token/)
 - [Instagram Platform /me](https://developers.facebook.com/docs/instagram-platform/reference/me/)
