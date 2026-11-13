@@ -17,4 +17,32 @@ describe('handleIgHashtag', () => {
     });
     expect(returnItems[0].json).toEqual({ data: [{ id: 'hashtag-1' }] });
   });
+
+  it('fetches hashtag media through the shared paginator with its query and page size', async () => {
+    const { context, items, requests, returnItems } = createOperationContext(
+      {
+        graphApiVersion: 'v26.0',
+        node: { value: 'account-1' },
+        hashtagId: 'hashtag-1',
+        returnAll: false,
+        limit: 2,
+      },
+      { data: [{ id: 'media-1' }, { id: 'media-2' }] },
+    );
+
+    await invokeHandler(
+      handleIgHashtag,
+      context,
+      'igHashtag',
+      'getRecentMedia',
+      items,
+      returnItems,
+    );
+
+    expect(requests[0]).toMatchObject({
+      url: 'https://graph.facebook.com/v26.0/hashtag-1/recent_media',
+      qs: { user_id: 'account-1', limit: 2, fields: expect.stringContaining('media_type') },
+    });
+    expect(returnItems[0].json).toEqual({ data: [{ id: 'media-1' }, { id: 'media-2' }] });
+  });
 });

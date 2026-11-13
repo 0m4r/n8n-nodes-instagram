@@ -12,7 +12,7 @@ import type {
 } from 'n8n-workflow';
 import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 import { instagramProperties } from './properties';
-import { toNodeError } from './utils';
+import { toErrorItem, toNodeError } from './utils';
 import { handleMessaging } from './operations/messaging';
 import { handleAuth } from './operations/auth';
 import { handleCarousel } from './operations/carousel';
@@ -43,7 +43,8 @@ export class Instagram implements INodeType {
     group: ['transform'],
     version: 1,
     subtitle: '={{$parameter["operation"]}}',
-    description: 'Publish media to Instagram using Instagram or Facebook Graph API',
+    description:
+      'Publish and manage Instagram content, moderate comments, send messages, and access account and hashtag data through the Instagram and Facebook Graph APIs.',
     defaults: {
       name: 'Instagram',
     },
@@ -199,33 +200,7 @@ export class Instagram implements INodeType {
           throw toNodeError(this.getNode(), error);
         }
 
-        let errorItem;
-        type GraphError = {
-          message?: string;
-          code?: number;
-          error_subcode?: number;
-        };
-        type ErrorWithGraph = {
-          response?: {
-            body?: {
-              error?: GraphError;
-            };
-            headers?: IDataObject;
-          };
-          statusCode?: number;
-        };
-        const errorWithGraph = error as ErrorWithGraph;
-        if (errorWithGraph.response !== undefined) {
-          const graphApiErrors = errorWithGraph.response.body?.error ?? {};
-          errorItem = {
-            statusCode: errorWithGraph.statusCode,
-            ...graphApiErrors,
-            headers: errorWithGraph.response.headers,
-          };
-        } else {
-          errorItem = error as IDataObject;
-        }
-        returnItems.push({ json: { ...errorItem }, pairedItem: { item: itemIndex } });
+        returnItems.push({ json: toErrorItem(error), pairedItem: { item: itemIndex } });
       }
     }
 

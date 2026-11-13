@@ -6,7 +6,7 @@ import type {
   INodeExecutionData,
 } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
-import { toNodeError } from '../utils';
+import { getRequiredStringParameter, toErrorItem, toNodeError } from '../utils';
 
 export async function handleComments(
   ctx: IExecuteFunctions,
@@ -17,27 +17,13 @@ export async function handleComments(
   items: INodeExecutionData[],
   returnItems: INodeExecutionData[],
 ): Promise<void> {
-  let graphApiVersion: string;
-  try {
-    // Get API version from node parameter
-    graphApiVersion = ctx.getNodeParameter('graphApiVersion', itemIndex) as string;
-    if (!graphApiVersion || typeof graphApiVersion !== 'string') {
-      throw new NodeOperationError(
-        ctx.getNode(),
-        `Invalid or missing Graph API version parameter at item index ${itemIndex}. Graph API version must be a non-empty string (e.g., 'v22.0').`,
-        { itemIndex },
-      );
-    }
-  } catch (error) {
-    if (error instanceof NodeOperationError) {
-      throw toNodeError(ctx.getNode(), error);
-    }
-    throw new NodeOperationError(
-      ctx.getNode(),
-      `Failed to get Graph API version parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
-      { itemIndex },
-    );
-  }
+  const graphApiVersion = getRequiredStringParameter(
+    ctx,
+    'graphApiVersion',
+    itemIndex,
+    'Graph API version',
+    "Graph API version must be a non-empty string (e.g., 'v22.0').",
+  );
 
   try {
     if (operation === 'list') {
@@ -280,33 +266,17 @@ export async function handleComments(
     }
 
     if (operation === 'sendPrivateReply') {
-      let accountId: string;
       let commentId: string;
       let text: string;
 
-      try {
-        const nodeParam = ctx.getNodeParameter('node', itemIndex) as string | { value: string };
-
-        // Handle both old string format and new resourceLocator format
-
-        accountId = typeof nodeParam === 'string' ? nodeParam : nodeParam.value;
-        if (!accountId || typeof accountId !== 'string') {
-          throw new NodeOperationError(
-            ctx.getNode(),
-            `Invalid or missing Instagram Account ID parameter at item index ${itemIndex}. Account ID must be a non-empty string.`,
-            { itemIndex },
-          );
-        }
-      } catch (error) {
-        if (error instanceof NodeOperationError) {
-          throw toNodeError(ctx.getNode(), error);
-        }
-        throw new NodeOperationError(
-          ctx.getNode(),
-          `Failed to get Instagram Account ID parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
-          { itemIndex },
-        );
-      }
+      const accountId = getRequiredStringParameter(
+        ctx,
+        'node',
+        itemIndex,
+        'Instagram Account ID',
+        'Account ID must be a non-empty string.',
+        true,
+      );
 
       try {
         commentId = ctx.getNodeParameter('commentId', itemIndex) as string;
@@ -421,33 +391,7 @@ export async function handleComments(
       throw toNodeError(ctx.getNode(), error);
     }
 
-    let errorItem;
-    type GraphError = {
-      message?: string;
-      code?: number;
-      error_subcode?: number;
-    };
-    type ErrorWithGraph = {
-      response?: {
-        body?: {
-          error?: GraphError;
-        };
-        headers?: IDataObject;
-      };
-      statusCode?: number;
-    };
-    const errorWithGraph = error as ErrorWithGraph;
-    if (errorWithGraph.response !== undefined) {
-      const graphApiErrors = errorWithGraph.response.body?.error ?? {};
-      errorItem = {
-        statusCode: errorWithGraph.statusCode,
-        ...graphApiErrors,
-        headers: errorWithGraph.response.headers,
-      };
-    } else {
-      errorItem = error as IDataObject;
-    }
-    returnItems.push({ json: { ...errorItem }, pairedItem: { item: itemIndex } });
+    returnItems.push({ json: toErrorItem(error), pairedItem: { item: itemIndex } });
     return;
   }
 

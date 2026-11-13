@@ -6,7 +6,7 @@ import type {
   INodeExecutionData,
 } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
-import { toNodeError } from '../utils';
+import { getRequiredStringParameter, toErrorItem, toNodeError } from '../utils';
 
 export async function handlePage(
   ctx: IExecuteFunctions,
@@ -17,28 +17,14 @@ export async function handlePage(
   items: INodeExecutionData[],
   returnItems: INodeExecutionData[],
 ): Promise<void> {
-  let graphApiVersion: string;
   let pageId: string;
-  try {
-    // Get API version from node parameter
-    graphApiVersion = ctx.getNodeParameter('graphApiVersion', itemIndex) as string;
-    if (!graphApiVersion || typeof graphApiVersion !== 'string') {
-      throw new NodeOperationError(
-        ctx.getNode(),
-        `Invalid or missing Graph API version parameter at item index ${itemIndex}. Graph API version must be a non-empty string (e.g., 'v22.0').`,
-        { itemIndex },
-      );
-    }
-  } catch (error) {
-    if (error instanceof NodeOperationError) {
-      throw toNodeError(ctx.getNode(), error);
-    }
-    throw new NodeOperationError(
-      ctx.getNode(),
-      `Failed to get Graph API version parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
-      { itemIndex },
-    );
-  }
+  const graphApiVersion = getRequiredStringParameter(
+    ctx,
+    'graphApiVersion',
+    itemIndex,
+    'Graph API version',
+    "Graph API version must be a non-empty string (e.g., 'v22.0').",
+  );
 
   try {
     pageId = ctx.getNodeParameter('pageId', itemIndex) as string;
@@ -108,33 +94,7 @@ export async function handlePage(
       throw toNodeError(ctx.getNode(), error);
     }
 
-    let errorItem;
-    type GraphError = {
-      message?: string;
-      code?: number;
-      error_subcode?: number;
-    };
-    type ErrorWithGraph = {
-      response?: {
-        body?: {
-          error?: GraphError;
-        };
-        headers?: IDataObject;
-      };
-      statusCode?: number;
-    };
-    const errorWithGraph = error as ErrorWithGraph;
-    if (errorWithGraph.response !== undefined) {
-      const graphApiErrors = errorWithGraph.response.body?.error ?? {};
-      errorItem = {
-        statusCode: errorWithGraph.statusCode,
-        ...graphApiErrors,
-        headers: errorWithGraph.response.headers,
-      };
-    } else {
-      errorItem = error as IDataObject;
-    }
-    returnItems.push({ json: { ...errorItem }, pairedItem: { item: itemIndex } });
+    returnItems.push({ json: toErrorItem(error), pairedItem: { item: itemIndex } });
     return;
   }
 

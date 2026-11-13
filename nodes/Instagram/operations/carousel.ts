@@ -7,7 +7,7 @@ import type {
   JsonObject,
 } from 'n8n-workflow';
 import { NodeApiError, NodeOperationError } from 'n8n-workflow';
-import { toNodeError } from '../utils';
+import { getRequiredStringParameter, toErrorItem, toNodeError } from '../utils';
 import { waitForContainerReady } from '../containerPolling';
 
 export async function handleCarousel(
@@ -20,8 +20,6 @@ export async function handleCarousel(
   returnItems: INodeExecutionData[],
 ): Promise<void> {
   try {
-    let node: string;
-    let graphApiVersion: string;
     let caption: string;
     let carouselMedia: {
       mediaItem?: Array<{
@@ -34,50 +32,23 @@ export async function handleCarousel(
       }>;
     };
 
-    try {
-      const nodeParam = ctx.getNodeParameter('node', itemIndex) as string | { value: string };
+    const accountId = getRequiredStringParameter(
+      ctx,
+      'node',
+      itemIndex,
+      'node (account ID)',
+      'Node must be a non-empty string.',
+      true,
+      'node',
+    );
 
-      // Handle both old string format and new resourceLocator format
-
-      node = typeof nodeParam === 'string' ? nodeParam : nodeParam.value;
-      if (!node || typeof node !== 'string') {
-        throw new NodeOperationError(
-          ctx.getNode(),
-          `Invalid or missing node (account ID) parameter at item index ${itemIndex}. Node must be a non-empty string.`,
-          { itemIndex },
-        );
-      }
-    } catch (error) {
-      if (error instanceof NodeOperationError) {
-        throw toNodeError(ctx.getNode(), error);
-      }
-      throw new NodeOperationError(
-        ctx.getNode(),
-        `Failed to get node parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
-        { itemIndex },
-      );
-    }
-
-    try {
-      // Get API version from node parameter
-      graphApiVersion = ctx.getNodeParameter('graphApiVersion', itemIndex) as string;
-      if (!graphApiVersion || typeof graphApiVersion !== 'string') {
-        throw new NodeOperationError(
-          ctx.getNode(),
-          `Invalid or missing Graph API version parameter at item index ${itemIndex}. Graph API version must be a non-empty string (e.g., 'v22.0').`,
-          { itemIndex },
-        );
-      }
-    } catch (error) {
-      if (error instanceof NodeOperationError) {
-        throw toNodeError(ctx.getNode(), error);
-      }
-      throw new NodeOperationError(
-        ctx.getNode(),
-        `Failed to get Graph API version parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
-        { itemIndex },
-      );
-    }
+    const graphApiVersion = getRequiredStringParameter(
+      ctx,
+      'graphApiVersion',
+      itemIndex,
+      'Graph API version',
+      "Graph API version must be a non-empty string (e.g., 'v22.0').",
+    );
 
     try {
       caption = ctx.getNodeParameter('caption', itemIndex, '') as string;
@@ -289,7 +260,7 @@ export async function handleCarousel(
     // Simplified media item processing
     const childIds: string[] = [];
     let totalProductTagCount = 0;
-    const mediaUri = `https://${hostUrl}/${graphApiVersion}/${node}/media`;
+    const mediaUri = `https://${hostUrl}/${graphApiVersion}/${accountId}/media`;
 
     for (let i = 0; i < mediaItems.length; i++) {
       const item = mediaItems[i];
@@ -529,7 +500,7 @@ export async function handleCarousel(
     }
 
     // Publish carousel
-    const publishUri = `https://${hostUrl}/${graphApiVersion}/${node}/media_publish`;
+    const publishUri = `https://${hostUrl}/${graphApiVersion}/${accountId}/media_publish`;
     const publishQuery: IDataObject = { creation_id: carouselContainerId };
     const publishOptions: IHttpRequestOptions = {
       headers: { accept: 'application/json,text/*;q=0.99' },
@@ -570,27 +541,7 @@ export async function handleCarousel(
     if (!ctx.continueOnFail()) {
       throw toNodeError(ctx.getNode(), error);
     }
-    type GraphError = {
-      message?: string;
-      code?: number;
-      error_subcode?: number;
-    };
-    type ErrorWithGraph = {
-      response?: {
-        body?: { error?: GraphError };
-        headers?: IDataObject;
-      };
-      statusCode?: number;
-    };
-    const errorWithGraph = error as ErrorWithGraph;
-    const errorItem =
-      errorWithGraph.response !== undefined
-        ? {
-            statusCode: errorWithGraph.statusCode,
-            ...(errorWithGraph.response.body?.error ?? {}),
-            headers: errorWithGraph.response.headers,
-          }
-        : (error as IDataObject);
+    const errorItem = toErrorItem(error);
     const contextMessage =
       error instanceof Error ? error.message : String((error as IDataObject).message ?? error);
     returnItems.push({

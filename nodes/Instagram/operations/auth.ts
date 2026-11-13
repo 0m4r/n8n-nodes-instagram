@@ -6,7 +6,7 @@ import type {
   INodeExecutionData,
 } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
-import { toNodeError } from '../utils';
+import { toErrorItem, toNodeError } from '../utils';
 
 export async function handleAuth(
   ctx: IExecuteFunctions,
@@ -233,37 +233,15 @@ export async function handleAuth(
       throw toNodeError(ctx.getNode(), error);
     }
 
-    let errorItem;
-    type GraphError = {
-      message?: string;
-      code?: number;
-      error_subcode?: number;
-    };
-    type ErrorWithGraph = {
-      response?: {
-        body?: {
-          error?: GraphError;
-        };
-        headers?: IDataObject;
-      };
+    const errorWithGraph = error as {
       statusCode?: number;
+      response?: { body?: IDataObject };
     };
-    const errorWithGraph = error as ErrorWithGraph;
-    if (errorWithGraph.response !== undefined) {
-      const graphApiErrors = errorWithGraph.response.body?.error ?? {};
-      errorItem = {
-        statusCode: errorWithGraph.statusCode,
-        ...graphApiErrors,
-        headers: errorWithGraph.response.headers,
-      };
-    } else {
-      errorItem = error as IDataObject;
-    }
     ctx.logger.error('[operations/auth.ts:handleAuth] Operation failed', {
       statusCode: errorWithGraph.statusCode,
       apiResponse: errorWithGraph.response?.body ?? error,
     });
-    returnItems.push({ json: { ...errorItem }, pairedItem: { item: itemIndex } });
+    returnItems.push({ json: toErrorItem(error), pairedItem: { item: itemIndex } });
     return;
   }
 

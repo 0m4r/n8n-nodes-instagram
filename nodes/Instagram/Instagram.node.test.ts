@@ -27,6 +27,11 @@ const createExecuteContext = (
 };
 
 describe('Instagram node request contracts', () => {
+  it('describes the node capabilities in the editor', () => {
+    expect(new Instagram().description.description).toContain('moderate comments');
+    expect(new Instagram().description.description).toContain('access account and hashtag data');
+  });
+
   it('maps account list-search results and honors the configured API host', async () => {
     const request = vi.fn(async () => ({
       id: 'account-1',

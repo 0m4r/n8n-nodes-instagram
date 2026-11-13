@@ -9,7 +9,7 @@ import type {
 import { NodeApiError, NodeOperationError, sleep } from 'n8n-workflow';
 import { isMediaNotReadyError, waitForContainerReady } from '../containerPolling';
 import { instagramResourceHandlers } from '../resources';
-import { toNodeError } from '../utils';
+import { getRequiredStringParameter, toErrorItem, toNodeError } from '../utils';
 import type { InstagramResourceType } from '../resources/types';
 
 export async function handlePublish(
@@ -36,55 +36,26 @@ export async function handlePublish(
     );
   }
 
-  let node: string;
-  let graphApiVersion: string;
   let caption: string;
   let additionalFields: IDataObject;
 
-  try {
-    const nodeParam = ctx.getNodeParameter('node', itemIndex) as string | { value: string };
+  const accountId = getRequiredStringParameter(
+    ctx,
+    'node',
+    itemIndex,
+    'node (account ID)',
+    'Node must be a non-empty string.',
+    true,
+    'node',
+  );
 
-    // Handle both old string format and new resourceLocator format
-
-    node = typeof nodeParam === 'string' ? nodeParam : nodeParam.value;
-    if (!node || typeof node !== 'string') {
-      throw new NodeOperationError(
-        ctx.getNode(),
-        `Invalid or missing node (account ID) parameter at item index ${itemIndex}. Node must be a non-empty string.`,
-        { itemIndex },
-      );
-    }
-  } catch (error) {
-    if (error instanceof NodeOperationError) {
-      throw toNodeError(ctx.getNode(), error);
-    }
-    throw new NodeOperationError(
-      ctx.getNode(),
-      `Failed to get node parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
-      { itemIndex },
-    );
-  }
-
-  try {
-    // Get API version from node parameter
-    graphApiVersion = ctx.getNodeParameter('graphApiVersion', itemIndex) as string;
-    if (!graphApiVersion || typeof graphApiVersion !== 'string') {
-      throw new NodeOperationError(
-        ctx.getNode(),
-        `Invalid or missing Graph API version parameter at item index ${itemIndex}. Graph API version must be a non-empty string (e.g., 'v22.0').`,
-        { itemIndex },
-      );
-    }
-  } catch (error) {
-    if (error instanceof NodeOperationError) {
-      throw toNodeError(ctx.getNode(), error);
-    }
-    throw new NodeOperationError(
-      ctx.getNode(),
-      `Failed to get Graph API version parameter at item index ${itemIndex}: ${error instanceof Error ? error.message : String(error)}`,
-      { itemIndex },
-    );
-  }
+  const graphApiVersion = getRequiredStringParameter(
+    ctx,
+    'graphApiVersion',
+    itemIndex,
+    'Graph API version',
+    "Graph API version must be a non-empty string (e.g., 'v22.0').",
+  );
 
   try {
     caption = ctx.getNodeParameter('caption', itemIndex, '') as string;
@@ -146,7 +117,7 @@ export async function handlePublish(
   const httpRequestMethod = 'POST';
 
   // First request: Create media container
-  const mediaUri = `https://${hostUrl}/${graphApiVersion}/${node}/media`;
+  const mediaUri = `https://${hostUrl}/${graphApiVersion}/${accountId}/media`;
   let mediaPayload: IDataObject;
   try {
     mediaPayload = handler.buildMediaPayload.call(ctx, itemIndex);
@@ -371,7 +342,7 @@ export async function handlePublish(
         headers: err.response.headers,
       };
     } else {
-      errorItem = err;
+      errorItem = toErrorItem(error);
     }
     returnItems.push({ json: errorItem as IDataObject, pairedItem: { item: itemIndex } });
     return;
@@ -455,7 +426,7 @@ export async function handlePublish(
   }
 
   // Second request: Publish media
-  const publishUri = `https://${hostUrl}/${graphApiVersion}/${node}/media_publish`;
+  const publishUri = `https://${hostUrl}/${graphApiVersion}/${accountId}/media_publish`;
   // const publishQs: IDataObject = {
   //   creation_id: creationId,
   // };
@@ -525,7 +496,7 @@ export async function handlePublish(
         };
       } else {
         errorItem = {
-          ...(error as object),
+          ...toErrorItem(error),
           creation_id: creationId,
           note: 'Media was created but publishing failed',
         };
